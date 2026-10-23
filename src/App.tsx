@@ -13,6 +13,7 @@ import { OrderFormSection } from './components/OrderFormSection';
 import { OrderPageSection } from './components/OrderPageSection';
 import { ContactPageSection } from './components/ContactPageSection';
 import { ArticlesPageSection } from './components/ArticlesPageSection';
+import { AdminDashboard } from './components/AdminDashboard';
 import { TestimonialsSection } from './components/TestimonialsSection';
 import { FaqSection } from './components/FaqSection';
 import { Footer } from './components/Footer';
@@ -20,12 +21,13 @@ import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { FloatingShare } from './components/FloatingShare';
 import { BackToTop } from './components/BackToTop';
 import { PromoModal } from './components/PromoModal';
-import { Sparkles, ArrowRight, MessageCircle, FileEdit, PhoneCall, ShieldCheck, Tag } from 'lucide-react';
+import { Sparkles, ArrowRight, MessageCircle, FileEdit, PhoneCall, ShieldCheck, Tag, Lock } from 'lucide-react';
 import { ADMIN_WA_NUMBER, ADMIN_WA_DISPLAY } from './types/order';
 
 export default function App() {
   const getTabFromHash = (): PageTab => {
     const hash = window.location.hash.toLowerCase();
+    if (hash.includes('admin') || hash.includes('login-admin') || hash.includes('dashboard')) return 'admin';
     if (hash.includes('artikel') || hash.includes('article') || hash.includes('blog')) return 'artikel';
     if (hash.includes('order') || hash.includes('pesan')) return 'order';
     if (hash.includes('kontak') || hash.includes('contact') || hash.includes('hubungi')) return 'kontak';
@@ -158,10 +160,6 @@ export default function App() {
             {/* Home Bottom Action Navigation Banner */}
             <section className="py-16 bg-gradient-to-r from-sky-900 via-slate-900 to-indigo-950 text-white border-t border-slate-800">
               <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-500/20 text-sky-300 text-xs font-black uppercase tracking-wider border border-sky-400/30">
-                  <Sparkles className="w-4 h-4 text-amber-300" />
-                  <span>Website 3 Halaman Indo Digital</span>
-                </div>
                 <h3 className="text-2xl sm:text-4xl font-black tracking-tight text-balance">
                   Siap Naik Kelas & Buka Pintu Penjualan 24 Jam Nonstop?
                 </h3>
@@ -216,6 +214,7 @@ export default function App() {
           <div className="animate-fade-in">
             <ArticlesPageSection
               onNavigateToOrder={() => handleTabChange('order')}
+              onNavigateToAdmin={() => handleTabChange('admin')}
             />
           </div>
         )}
@@ -225,6 +224,16 @@ export default function App() {
           <div className="animate-fade-in">
             <ContactPageSection
               onNavigateToOrder={() => handleTabChange('order')}
+            />
+          </div>
+        )}
+
+        {/* ================= PAGE 5: ADMIN DASHBOARD (INPUT BLOG & ARTIKEL) ================= */}
+        {activeTab === 'admin' && (
+          <div className="animate-fade-in">
+            <AdminDashboard
+              onNavigateToHome={() => handleTabChange('home')}
+              onNavigateToPublicArticles={() => handleTabChange('artikel')}
             />
           </div>
         )}

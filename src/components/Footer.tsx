@@ -1,6 +1,6 @@
 import React from 'react';
 import { ADMIN_WA_DISPLAY, ADMIN_WA_NUMBER } from '../types/order';
-import { MessageCircle, ShieldCheck, Heart, ExternalLink, Sparkles, ArrowRight, Home, FileEdit, PhoneCall, MapPin, BookOpen } from 'lucide-react';
+import { MessageCircle, ShieldCheck, Heart, ExternalLink, Sparkles, ArrowRight, Home, FileEdit, PhoneCall, MapPin, BookOpen, Lock } from 'lucide-react';
 import { PageTab } from './Navbar';
 
 interface FooterProps {
@@ -86,6 +86,16 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange }) => {
                 >
                   <PhoneCall className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Kontak Kami (Studio & WA)</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onTabChange ? onTabChange('admin') : (window.location.hash = '#/admin')}
+                  className="hover:text-amber-300 transition-colors cursor-pointer flex items-center gap-2 text-amber-400 font-bold"
+                  title="Akses Login Admin"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Akses Admin (Kelola Blog)</span>
                 </button>
               </li>
               <li className="pt-1 border-t border-slate-800">
@@ -186,6 +196,14 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange }) => {
               className="hover:text-slate-400 cursor-pointer"
             >
               Kontak Kami
+            </button>
+            <span>•</span>
+            <button
+              onClick={() => onTabChange ? onTabChange('admin') : (window.location.hash = '#/admin')}
+              className="hover:text-amber-400 text-slate-400 cursor-pointer flex items-center gap-1 font-semibold"
+            >
+              <Lock className="w-3 h-3 text-amber-500" />
+              <span>Login Admin</span>
             </button>
           </div>
         </div>

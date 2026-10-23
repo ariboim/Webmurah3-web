@@ -11,11 +11,12 @@ import {
   PhoneCall,
   Flame,
   BookOpen,
+  Lock,
 } from 'lucide-react';
 import { ADMIN_WA_NUMBER, ADMIN_WA_DISPLAY } from '../types/order';
 import { IndoDigitalLogo } from './IndoDigitalLogo';
 
-export type PageTab = 'home' | 'order' | 'artikel' | 'kontak';
+export type PageTab = 'home' | 'order' | 'artikel' | 'kontak' | 'admin';
 
 interface NavbarProps {
   activeTab: PageTab;
@@ -166,6 +167,21 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange }) => {
             </a>
 
 
+            {/* Highly Visible Admin Login & Blog Input Trigger */}
+            <button
+              onClick={() => handleSelectTab('admin')}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-black rounded-xl border transition-all cursor-pointer ${
+                activeTab === 'admin'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-sky-400/40'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-300 hover:border-slate-400'
+              }`}
+              title="Akses Admin: Input & Kelola Artikel / Blog"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-500" />
+              <span>Admin</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            </button>
+
             {activeTab !== 'order' && (
               <button
                 onClick={() => handleSelectTab('order')}
@@ -267,6 +283,23 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange }) => {
                   <span>4. Kontak Kami (WhatsApp & Studio)</span>
                 </div>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              </button>
+
+              <button
+                onClick={() => handleSelectTab('admin')}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-black transition-all ${
+                  activeTab === 'admin'
+                    ? 'bg-slate-900 text-white shadow-md'
+                    : 'bg-amber-50/70 text-slate-800 border border-amber-200'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Lock className="w-4 h-4 text-amber-600" />
+                  <span>5. Login Admin (Input Blog/Artikel)</span>
+                </div>
+                <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-extrabold">
+                  Khusus Admin
+                </span>
               </button>
             </div>
           </div>

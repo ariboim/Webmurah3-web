@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BookOpen,
   TrendingUp,
@@ -14,147 +14,104 @@ import {
   X,
   Send,
   Zap,
+  Lock,
+  Play,
+  Video as VideoIcon,
+  PlusCircle,
+  Mail,
+  AlertCircle,
 } from 'lucide-react';
-
-export interface Article {
-  id: string;
-  category: string;
-  categoryColor: string;
-  title: string;
-  subtitle: string;
-  readTime: string;
-  date: string;
-  sourceName: string;
-  sourceUrl: string;
-  keyStat: string;
-  keyStatLabel: string;
-  summary: string;
-  content: {
-    background: string;
-    challenge: string;
-    strategy: string[];
-    result: string;
-    takeaway: string;
-  };
-}
-
-const ARTICLES: Article[] = [
-  {
-    id: 'metamorf-perawatan-sepatu',
-    category: 'Jasa & Produk Kreatif',
-    categoryColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    title: 'Kisah Sukses "Metamorf": Dari Garasi Rumah Meraup Lonjakan Omzet 800% Berkat Ekosistem Digital',
-    subtitle: 'Bagaimana usaha perawatan sepatu DIY berhasil menembus pasar 38 kota di Indonesia melalui halaman katalog digital mandiri.',
-    readTime: '4 Menit Baca',
-    date: '2026',
-    sourceName: 'Kompas.com & Liputan UMKM Go Digital',
-    sourceUrl: 'https://kompas.com',
-    keyStat: '+800%',
-    keyStatLabel: 'Lonjakan Omzet Usaha',
-    summary:
-      'Senoaji, pemilik brand perawatan sepatu Metamorf, awalnya hanya melayani orderan sekitar lingkungan perumahan. Setelah membangun kehadiran digital dengan halaman penawaran khusus dan integrasi pemesanan instan via WhatsApp, bisnisnya berkembang pesat dengan lonjakan omzet hingga 800% dan pengiriman ratusan paket setiap hari ke seluruh Indonesia.',
-    content: {
-      background:
-        'Senoaji mengawali usaha perawatan sepatu DIY (Do-It-Yourself) dari garasi rumah dengan modal terbatas. Sebelum bertransformasi ke digital, tantangan terbesarnya adalah lingkup pasar yang sempit karena hanya mengandalkan pelanggan lokal sekitar domisili yang datang secara fisik.',
-      challenge:
-        'Pelanggan ragu membeli produk perawatan sepatu tanpa bukti hasil nyata (before-after), serta kebingungan calon pembeli memilih jenis formula pembersih yang cocok untuk bahan sepatu tertentu (canvas, suede, leather).',
-      strategy: [
-        'Membuat halaman website/landing page resmi yang menampilkan galeri transformasi sebelum & sesudah (before-after) secara detail dan meyakinkan.',
-        'Menyediakan tombol konsultasi dan pemesanan cepat langsung ke WhatsApp, sehingga calon pembeli bisa berkonsultasi gratis mengenai jenis sepatu mereka sebelum membeli.',
-        'Menerapkan paket hemat bundling (sabun pembersih + sikat bulu kuda + semprotan anti-air) dengan diskon khusus yang dipajang di halaman utama website.',
-        'Memanfaatkan domain resmi sendiri (.my.id/.biz.id) yang meningkatkan reputasi usaha menjadi lebih tepercaya dan profesional di mata pelanggan luar pulau.',
-      ],
-      result:
-        'Omzet bulanan melonjak hingga 800% dalam waktu kurang dari satu tahun. Jangkauan distribusi melebar ke 38 kota dari Sumatra, Jawa, hingga Sulawesi, dengan perputaran ratusan paket perawatan sepatu yang dikirim setiap minggunya.',
-      takeaway:
-        'Bagi pelaku usaha kreatif, halaman website mandiri adalah "etalase permanen" 24 jam. Kejelasan visual hasil kerja dan kemudahan order via WhatsApp menjadi kunci utama yang meruntuhkan keraguan pembeli baru.',
-    },
-  },
-  {
-    id: 'kuliner-rasa-nusantara',
-    category: 'Kuliner & Makanan Kemasan',
-    categoryColor: 'bg-amber-50 text-amber-800 border-amber-200',
-    title: 'Transformasi "Rasa Nusantara": Penjualan Makanan Rumahan Melonjak 230% dan Tembus Pasar Antar-Kota',
-    subtitle: 'Kisah UMKM kuliner Bandung yang melompat dari sekadar jualan antar tetangga menjadi produsen frozen food beromzet puluhan juta.',
-    readTime: '5 Menit Baca',
-    date: '2026',
-    sourceName: 'Digima & Studi Kasus UMKM Bandung',
-    sourceUrl: 'https://digima.id',
-    keyStat: '+230%',
-    keyStatLabel: 'Pertumbuhan Penjualan 12 Bulan',
-    summary:
-      'Usaha kuliner rumahan "Rasa Nusantara" asal Bandung mulanya hanya mengandalkan pesanan arisan tetangga. Begitu membuat landing page 1 halaman dengan menu paket frozen, testimoni pelanggan, dan jaminan pengiriman higienis, penjualan meroket 230% dalam 12 bulan dan 40% pesanan datang dari luar kota.',
-    content: {
-      background:
-        'Dimulai dari resep sambal cumi dan lauk pauk tradisional khas Jawa Barat oleh ibu rumah tangga, produk ini sangat disukai keluarga. Namun saat berniat menjadikannya bisnis serius, penjualan tersendat karena keterbatasan channel distribusi konvensional.',
-      challenge:
-        'Calon pembeli luar kota ragu mengenai ketahanan makanan, sertifikasi higienis, serta proses pengiriman makanan basah yang rawan basi jika tidak dikemas vakum dengan benar.',
-      strategy: [
-        'Membangun landing page khusus produk makanan dengan fokus pada foto produk asli berselera tinggi (high-appetite visual).',
-        'Menyematkan informasi ketahanan makanan secara transparan: tahan 7 hari suhu ruang, 6 bulan beku di freezer, dengan sertifikat P-IRT & Halal MUI.',
-        'Membuat paket promo bundling (Beli 3 Botol Sambal Gratis 1 Lauk Siap Saji) lengkap dengan hitung mundur penawaran terbatas.',
-        'Menyediakan formulir pemesanan ringkas dengan integrasi alamat otomatis dan konfirmasi ongkos kirim ekspedisi kilat Paxel / JNE YES.',
-      ],
-      result:
-        'Total transaksi bulanan meningkat 230% dalam waktu 12 bulan. Sebanyak 40% dari total pelanggan aktif kini berasal dari luar kota Bandung seperti Jakarta, Surabaya, Semarang, dan Denpasar, dengan pesanan rutin setiap awal bulan.',
-      takeaway:
-        'Bisnis kuliner yang memiliki landing page mandiri terlihat 10x lebih higienis dan tepercaya dibanding bisnis yang hanya berjualan di feed media sosial tanpa informasi spesifikasi produk yang jelas.',
-    },
-  },
-  {
-    id: 'riset-kemenkop-data-digital',
-    category: 'Riset & Data Nasional',
-    categoryColor: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-    title: 'Riset Kemenkop UKM & EzeeLink: Rata-Rata UMKM Digital Meraup Kenaikan Pendapatan 26% Hingga 5 Kali Lipat',
-    subtitle: 'Data komprehensif adopsi teknologi: mengapa memiliki aset website mandiri membebaskan UMKM dari jebakan perang harga.',
-    readTime: '4 Menit Baca',
-    date: '2026',
-    sourceName: 'Kemenkop UKM RI, Bank Indonesia & EzeeLink Research',
-    sourceUrl: 'https://binus.ac.id',
-    keyStat: '5X Lipat',
-    keyStatLabel: 'Maksimal Kenaikan Omzet',
-    summary:
-      'Laporan riset Kemenkop UKM dan survei adopsi digital mencatat rata-rata pelaku usaha mikro yang mendigitalisasi operasional dan memiliki website sendiri mengalami kenaikan omzet 26% hingga 5 kali lipat, memangkas rantai distribusi panjang, serta mengamankan database pembeli tetap.',
-    content: {
-      background:
-        'Transformasi digital UMKM menjadi agenda prioritas nasional dengan target lebih dari 30 juta UMKM terhubung ekosistem digital. Riset membuktikan bahwa bisnis dengan aset digital mandiri memiliki ketahanan ekonomi 3x lipat lebih tinggi saat krisis.',
-      challenge:
-        'Banyak UMKM hanya bergantung pada marketplace pihak ketiga, yang kerap memotong biaya admin tinggi (6% - 12%) serta memicu perang harga (*price war*) yang menghabiskan margin laba bersih pedagang kecil.',
-      strategy: [
-        'Membangun aset digital milik sendiri (landing page & nama domain bisnis mandiri) agar memiliki kendali penuh atas harga dan identitas merek.',
-        'Menghubungkan tombol pesan langsung ke kontak WhatsApp penjual, sehingga nomor ponsel pembeli tersimpan ke dalam database pelanggan bisnis.',
-        'Memanfaatkan penawaran harga paket (bundling) dan garansi kepuasan yang tidak bisa ditiru oleh kompetitor di marketplace.',
-        'Menerapkan pengerjaan kilat 24 jam untuk meluncurkan kampanye produk sebelum momen musiman (hari raya, gajian, atau event promo).',
-      ],
-      result:
-        'Pelaku usaha yang menerapkan strategi landing page mandiri mencatatkan penghematan biaya komisi hingga 100%, kenaikan omzet rata-rata 26% hingga 5x lipat, dan tingkat pembelian ulang (*repeat order*) mencapai 35-45% karena komunikasi WhatsApp yang intim.',
-      takeaway:
-        'Website bukan sekadar biaya, melainkan aset investasi penjualan 24 jam. Dengan biaya awal terjangkau (promo Rp 499.000 all-in), ROI (Return on Investment) UMKM dapat tercapai hanya dari 5 sampai 10 transaksi pertama.',
-    },
-  },
-];
+import {
+  Article,
+  getAllArticles,
+} from '../utils/articleStorage';
+import {
+  convertYouTubeEmbedUrl,
+  convertGoogleDriveVideoUrl,
+  detectVideoSource,
+} from '../utils/mediaUtils';
 
 interface ArticlesPageSectionProps {
   onNavigateToOrder?: () => void;
+  onNavigateToAdmin?: () => void;
 }
 
 export const ArticlesPageSection: React.FC<ArticlesPageSectionProps> = ({
   onNavigateToOrder,
+  onNavigateToAdmin,
 }) => {
+  const [articles, setArticles] = useState<Article[]>(getAllArticles);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
+  // Newsletter Signup State
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [newsletterMessage, setNewsletterMessage] = useState('');
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newsletterEmail.trim();
+
+    if (!trimmed) {
+      setNewsletterStatus('error');
+      setNewsletterMessage('Harap masukkan alamat email Anda.');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmed)) {
+      setNewsletterStatus('error');
+      setNewsletterMessage('Format email tidak valid. Gunakan format seperti nama@domain.com');
+      return;
+    }
+
+    setNewsletterStatus('loading');
+    setTimeout(() => {
+      try {
+        const stored = localStorage.getItem('webmurah_newsletter_subs');
+        const list = stored ? JSON.parse(stored) : [];
+        if (!list.includes(trimmed)) {
+          list.push(trimmed);
+          localStorage.setItem('webmurah_newsletter_subs', JSON.stringify(list));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+
+      setNewsletterStatus('success');
+      setNewsletterMessage(`Pendaftaran berhasil! Email ${trimmed} telah terdaftar untuk menerima studi kasus & tips UMKM mingguan.`);
+    }, 400);
+  };
+
+  const handleResetNewsletter = () => {
+    setNewsletterEmail('');
+    setNewsletterStatus('idle');
+    setNewsletterMessage('');
+  };
+
+  // Listen to article updates from admin dashboard
+  useEffect(() => {
+    const handleArticlesUpdated = () => {
+      setArticles(getAllArticles());
+    };
+    window.addEventListener('articles-updated', handleArticlesUpdated);
+    return () => window.removeEventListener('articles-updated', handleArticlesUpdated);
+  }, []);
+
+  // Compute unique dynamic categories from articles
   const categories = [
     { id: 'all', label: 'Semua Artikel' },
-    { id: 'Jasa & Produk Kreatif', label: 'Jasa & Produk Kreatif' },
-    { id: 'Kuliner & Makanan Kemasan', label: 'Kuliner & F&B' },
-    { id: 'Riset & Data Nasional', label: 'Riset & Data Nasional' },
+    ...Array.from(new Set(articles.map((a) => a.category))).map((cat) => ({
+      id: cat,
+      label: cat,
+    })),
   ];
 
   const filteredArticles =
     activeCategory === 'all'
-      ? ARTICLES
-      : ARTICLES.filter((a) => a.category === activeCategory);
+      ? articles
+      : articles.filter((a) => a.category === activeCategory);
 
   const handleOpenOrder = () => {
     setSelectedArticle(null);
@@ -166,14 +123,35 @@ export const ArticlesPageSection: React.FC<ArticlesPageSectionProps> = ({
     }
   };
 
+  const handleOpenAdmin = () => {
+    if (onNavigateToAdmin) {
+      onNavigateToAdmin();
+    } else {
+      window.dispatchEvent(new CustomEvent('navigate-tab', { detail: 'admin' }));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="py-10 sm:py-16 bg-slate-50/50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-100 text-sky-800 text-xs font-black uppercase tracking-wider border border-sky-200 shadow-2xs">
-            <BookOpen className="w-3.5 h-3.5 text-sky-600" />
-            <span>Pusat Artikel & Inspirasi UMKM Go Digital</span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-100 text-sky-800 text-xs font-black uppercase tracking-wider border border-sky-200 shadow-2xs">
+              <BookOpen className="w-3.5 h-3.5 text-sky-600" />
+              <span>Pusat Artikel &amp; Inspirasi UMKM Go Digital</span>
+            </div>
+
+            {/* Quick Admin Shortcut Button */}
+            <button
+              onClick={handleOpenAdmin}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1D3582] hover:bg-[#162968] text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+              title="Khusus Admin: Tulis atau kelola artikel baru"
+            >
+              <Lock className="w-3 h-3 text-amber-300" />
+              <span>Akses Admin / Tulis Artikel</span>
+            </button>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight text-balance">
@@ -202,58 +180,86 @@ export const ArticlesPageSection: React.FC<ArticlesPageSectionProps> = ({
           </div>
         </div>
 
-        {/* 3 Featured Articles Grid */}
+        {/* Featured Articles Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {filteredArticles.map((article) => (
             <article
               key={article.id}
               className="bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group hover:border-sky-300"
             >
-              <div className="p-6 sm:p-7 space-y-4 flex-1">
-                {/* Top Metas */}
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <span
-                    className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border ${article.categoryColor}`}
-                  >
-                    {article.category}
-                  </span>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{article.readTime}</span>
+              <div>
+                {/* Media Cover Image (if uploaded/provided) */}
+                {article.imageUrl ? (
+                  <div className="relative w-full h-48 overflow-hidden bg-slate-100">
+                    <img
+                      src={article.imageUrl}
+                      alt={article.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                    {article.videoUrl && (
+                      <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-xs text-white text-[10px] font-black flex items-center gap-1.5 border border-white/20">
+                        <Play className="w-3 h-3 text-rose-500 fill-current" />
+                        <span>Ada Video</span>
+                      </div>
+                    )}
+                    {article.isCustom && (
+                      <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-emerald-600/90 backdrop-blur-xs text-white text-[10px] font-extrabold flex items-center gap-1 shadow-md">
+                        <Sparkles className="w-3 h-3 text-amber-300" />
+                        <span>Baru Ditulis</span>
+                      </div>
+                    )}
                   </div>
-                </div>
+                ) : null}
 
-                {/* Big Stat Highlight Badge */}
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-sky-50 via-indigo-50/40 to-white border border-sky-100 flex items-center justify-between">
-                  <div>
-                    <div className="text-3xl font-black text-sky-700 tracking-tight">
-                      {article.keyStat}
+                <div className="p-6 sm:p-7 space-y-4">
+                  {/* Top Metas */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span
+                      className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border ${article.categoryColor}`}
+                    >
+                      {article.category}
+                    </span>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{article.readTime}</span>
                     </div>
-                    <div className="text-[11px] font-bold text-slate-600">
-                      {article.keyStatLabel}
+                  </div>
+
+                  {/* Big Stat Highlight Badge */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-sky-50 via-indigo-50/40 to-white border border-sky-100 flex items-center justify-between">
+                    <div>
+                      <div className="text-3xl font-black text-sky-700 tracking-tight">
+                        {article.keyStat}
+                      </div>
+                      <div className="text-[11px] font-bold text-slate-600">
+                        {article.keyStatLabel}
+                      </div>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-md shadow-sky-600/20 group-hover:scale-110 transition-transform">
+                      <TrendingUp className="w-5 h-5 stroke-[2.2]" />
                     </div>
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-md shadow-sky-600/20 group-hover:scale-110 transition-transform">
-                    <TrendingUp className="w-5 h-5 stroke-[2.2]" />
+
+                  {/* Title */}
+                  <h3 className="text-lg sm:text-xl font-black text-slate-900 group-hover:text-sky-600 transition-colors leading-snug">
+                    {article.title}
+                  </h3>
+
+                  {/* Excerpt */}
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-3">
+                    {article.summary}
+                  </p>
+
+                  {/* Verified Source Citation */}
+                  <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500">
+                    <Award className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span className="font-semibold truncate">
+                      Sumber: {article.sourceName}
+                    </span>
                   </div>
-                </div>
-
-                {/* Title */}
-                <h3 className="text-lg sm:text-xl font-black text-slate-900 group-hover:text-sky-600 transition-colors leading-snug">
-                  {article.title}
-                </h3>
-
-                {/* Excerpt */}
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-3">
-                  {article.summary}
-                </p>
-
-                {/* Verified Source Citation */}
-                <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500">
-                  <Award className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  <span className="font-semibold truncate">
-                    Data: {article.sourceName}
-                  </span>
                 </div>
               </div>
 
@@ -264,7 +270,7 @@ export const ArticlesPageSection: React.FC<ArticlesPageSectionProps> = ({
                   onClick={() => setSelectedArticle(article)}
                   className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-sky-600 text-white text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs group-hover:shadow-md"
                 >
-                  <span>BACA KISAH LENGKAP & STRATEGI</span>
+                  <span>BACA KISAH LENGKAP &amp; STRATEGI</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -272,6 +278,119 @@ export const ArticlesPageSection: React.FC<ArticlesPageSectionProps> = ({
           ))}
         </div>
 
+        {/* ================= NEWSLETTER SIGNUP SECTION ================= */}
+        <section
+          aria-label="Newsletter Signup"
+          className="bg-gradient-to-br from-white via-sky-50/70 to-indigo-50/60 rounded-3xl p-6 sm:p-10 border border-sky-200/90 shadow-sm relative overflow-hidden"
+        >
+          {/* Subtle decorative background circles */}
+          <div className="absolute -top-12 -right-12 w-48 h-48 bg-sky-200/30 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-indigo-200/30 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 max-w-3xl mx-auto text-center space-y-4">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-100/90 text-sky-900 text-xs font-black uppercase tracking-wider border border-sky-200 shadow-2xs">
+              <Mail className="w-3.5 h-3.5 text-sky-600" />
+              <span>Newsletter &amp; Update Mingguan</span>
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight text-balance">
+              Dapatkan Studi Kasus &amp; Tips Bisnis Digital Terupdate
+            </h2>
+
+            <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-2xl mx-auto">
+              Bergabung bersama 1.200+ pelaku UMKM dan pemilik bisnis online di Indonesia. Kami kirimkan ringkasan tips menaikkan penjualan, strategi closing via WhatsApp, dan studi kasus inspiratif langsung ke email Anda.
+            </p>
+
+            {/* Newsletter Form or Success State */}
+            {newsletterStatus === 'success' ? (
+              <div className="p-5 sm:p-6 rounded-2xl bg-emerald-50 border border-emerald-200/90 text-emerald-950 space-y-3 shadow-xs animate-fade-in max-w-xl mx-auto">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-extrabold text-emerald-900">
+                    Pendaftaran Newsletter Berhasil!
+                  </h3>
+                  <p className="text-xs text-emerald-800 leading-relaxed font-medium">
+                    {newsletterMessage}
+                  </p>
+                </div>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleResetNewsletter}
+                    className="text-xs font-bold text-emerald-700 hover:text-emerald-900 underline underline-offset-4 cursor-pointer"
+                  >
+                    Daftarkan alamat email lainnya
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleNewsletterSubmit} className="max-w-xl mx-auto space-y-3 pt-2">
+                <div className="flex flex-col sm:flex-row items-stretch gap-2.5">
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                      <Mail className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="email"
+                      value={newsletterEmail}
+                      onChange={(e) => {
+                        setNewsletterEmail(e.target.value);
+                        if (newsletterStatus === 'error') {
+                          setNewsletterStatus('idle');
+                          setNewsletterMessage('');
+                        }
+                      }}
+                      placeholder="Masukkan alamat email Anda (contoh: nama@gmail.com)"
+                      className="w-full pl-10 pr-4 py-3.5 rounded-2xl border border-slate-300 bg-white text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-sky-500 focus:border-sky-500 shadow-2xs transition-all"
+                      disabled={newsletterStatus === 'loading'}
+                      aria-label="Alamat email untuk berlangganan newsletter"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={newsletterStatus === 'loading'}
+                    className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 active:scale-98 text-white font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {newsletterStatus === 'loading' ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Mendaftarkan...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Langganan Gratis</span>
+                        <Send className="w-3.5 h-3.5" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Error Notice */}
+                {newsletterStatus === 'error' && (
+                  <div className="flex items-center justify-center gap-2 text-xs font-bold text-rose-600 animate-shake pt-1">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{newsletterMessage}</span>
+                  </div>
+                )}
+
+                {/* Trust Micro-copy */}
+                <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] text-slate-500 pt-1">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    Bebas Spam 100%
+                  </span>
+                  <span>•</span>
+                  <span>Update Berkala Mingguan</span>
+                  <span>•</span>
+                  <span>Bisa Berhenti Kapan Saja</span>
+                </div>
+              </form>
+            )}
+          </div>
+        </section>
 
         {/* Big Bottom Social Proof Callout */}
         <div className="bg-gradient-to-r from-sky-900 via-slate-900 to-indigo-950 rounded-3xl p-8 sm:p-12 text-white text-center space-y-6 shadow-xl relative overflow-hidden">
@@ -315,7 +434,7 @@ export const ArticlesPageSection: React.FC<ArticlesPageSectionProps> = ({
             {/* Close Button */}
             <button
               onClick={() => setSelectedArticle(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+              className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer z-10"
               title="Tutup Artikel"
             >
               <X className="w-5 h-5" />
@@ -341,6 +460,46 @@ export const ArticlesPageSection: React.FC<ArticlesPageSectionProps> = ({
               </div>
             </div>
 
+            {/* Cover Image in Modal (if available) */}
+            {selectedArticle.imageUrl && (
+              <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 max-h-80">
+                <img
+                  src={selectedArticle.imageUrl}
+                  alt={selectedArticle.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+
+            {/* Embedded Video Player in Modal (if available: YouTube or Google Drive) */}
+            {selectedArticle.videoUrl && (() => {
+              const videoType = selectedArticle.videoType || detectVideoSource(selectedArticle.videoUrl);
+              let embedUrl = selectedArticle.videoUrl;
+              if (videoType === 'youtube') {
+                embedUrl = convertYouTubeEmbedUrl(selectedArticle.videoUrl) || selectedArticle.videoUrl;
+              } else if (videoType === 'drive') {
+                embedUrl = convertGoogleDriveVideoUrl(selectedArticle.videoUrl) || selectedArticle.videoUrl;
+              }
+
+              return (
+                <div className="space-y-2 rounded-2xl p-4 bg-slate-900 text-white">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
+                    <VideoIcon className="w-4 h-4 text-rose-400" />
+                    <span>Video Pendukung Artikel:</span>
+                  </div>
+                  <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-slate-800">
+                    <iframe
+                      src={embedUrl}
+                      title={selectedArticle.title}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Stat Callout in Modal */}
             <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-sky-50 to-indigo-50/50 border border-sky-200 flex items-center justify-between">
               <div>
@@ -358,51 +517,73 @@ export const ArticlesPageSection: React.FC<ArticlesPageSectionProps> = ({
 
             {/* Editorial Content Breakdown */}
             <div className="space-y-6 text-sm text-slate-700 leading-relaxed">
-              <div>
-                <h4 className="font-black text-slate-900 text-base mb-2 uppercase tracking-wide">
-                  1. Latar Belakang &amp; Awal Usaha
-                </h4>
-                <p>{selectedArticle.content.background}</p>
-              </div>
-
-              <div>
-                <h4 className="font-black text-slate-900 text-base mb-2 uppercase tracking-wide">
-                  2. Tantangan Sebelum Memiliki Landing Page
-                </h4>
-                <p>{selectedArticle.content.challenge}</p>
-              </div>
-
-              <div>
-                <h4 className="font-black text-slate-900 text-base mb-2 uppercase tracking-wide">
-                  3. Strategi Digitalisasi yang Diterapkan
-                </h4>
-                <ul className="space-y-2.5">
-                  {selectedArticle.content.strategy.map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
+              {/* If Body Text is provided (free-form admin article) */}
+              {selectedArticle.content.bodyText && (
+                <div className="space-y-3 pt-2">
+                  {selectedArticle.content.bodyText.split('\n\n').map((paragraph, idx) => (
+                    <p key={idx} className="text-slate-800 leading-relaxed text-sm sm:text-base font-normal">
+                      {paragraph}
+                    </p>
                   ))}
-                </ul>
-              </div>
+                </div>
+              )}
 
-              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-1">
-                <h4 className="font-black text-emerald-900 text-sm uppercase tracking-wide">
-                  4. Hasil Nyata yang Dicapai
-                </h4>
-                <p className="text-emerald-950 font-medium">
-                  {selectedArticle.content.result}
-                </p>
-              </div>
+              {/* Structured Sections (if available) */}
+              {selectedArticle.content.background && (
+                <div>
+                  <h4 className="font-black text-slate-900 text-base mb-2 uppercase tracking-wide">
+                    1. Latar Belakang &amp; Awal Usaha
+                  </h4>
+                  <p>{selectedArticle.content.background}</p>
+                </div>
+              )}
 
-              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-1">
-                <h4 className="font-black text-amber-900 text-sm uppercase tracking-wide">
-                  5. Kesimpulan &amp; Pelajaran untuk UMKM Lain
-                </h4>
-                <p className="text-amber-950 font-medium">
-                  {selectedArticle.content.takeaway}
-                </p>
-              </div>
+              {selectedArticle.content.challenge && (
+                <div>
+                  <h4 className="font-black text-slate-900 text-base mb-2 uppercase tracking-wide">
+                    2. Tantangan Sebelum Memiliki Landing Page
+                  </h4>
+                  <p>{selectedArticle.content.challenge}</p>
+                </div>
+              )}
+
+              {selectedArticle.content.strategy && selectedArticle.content.strategy.length > 0 && (
+                <div>
+                  <h4 className="font-black text-slate-900 text-base mb-2 uppercase tracking-wide">
+                    3. Strategi Digitalisasi yang Diterapkan
+                  </h4>
+                  <ul className="space-y-2.5">
+                    {selectedArticle.content.strategy.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {selectedArticle.content.result && (
+                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-1">
+                  <h4 className="font-black text-emerald-900 text-sm uppercase tracking-wide">
+                    4. Hasil Nyata yang Dicapai
+                  </h4>
+                  <p className="text-emerald-950 font-medium">
+                    {selectedArticle.content.result}
+                  </p>
+                </div>
+              )}
+
+              {selectedArticle.content.takeaway && (
+                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-1">
+                  <h4 className="font-black text-amber-900 text-sm uppercase tracking-wide">
+                    5. Kesimpulan &amp; Pelajaran untuk UMKM Lain
+                  </h4>
+                  <p className="text-amber-950 font-medium">
+                    {selectedArticle.content.takeaway}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Modal Bottom CTA */}
@@ -425,3 +606,4 @@ export const ArticlesPageSection: React.FC<ArticlesPageSectionProps> = ({
     </div>
   );
 };
+export type { Article };
