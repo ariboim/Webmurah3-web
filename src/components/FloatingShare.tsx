@@ -7,10 +7,14 @@ export const FloatingShare: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [canNativeShare, setCanNativeShare] = useState(false);
 
-  // Check Web Share API capability
+  // Check Web Share API capability & clean up static HTML fallback
   useEffect(() => {
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       setCanNativeShare(true);
+    }
+    const staticBtn = document.getElementById('static-floating-share');
+    if (staticBtn) {
+      staticBtn.remove();
     }
   }, []);
 

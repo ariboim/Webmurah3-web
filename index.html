@@ -138,6 +138,29 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Instant Floating Share Button (Guaranteed Visible Even Before React Hydration) -->
+    <div id="static-floating-share" class="floating-share-btn-wrap" style="position: fixed; left: 0; top: 48%; transform: translateY(-50%); z-index: 9999;">
+      <a href="https://api.whatsapp.com/send?text=Jasa%20pembuatan%20landing%20page%20UMKM%2C%20bayar%20setelah%20jadi%20klik%20https%3A%2F%2Fwebmurah.biz.id" 
+         target="_blank" 
+         rel="noopener noreferrer"
+         class="floating-share-btn"
+         style="background: linear-gradient(135deg, #F59E0B 0%, #F58220 50%, #EA580C 100%); color: #FFFFFF; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-top-left-radius: 0; border-bottom-left-radius: 0; border: 1px solid rgba(254, 215, 170, 0.85); border-left: none; box-shadow: 0 4px 18px rgba(245, 130, 32, 0.45), 0 2px 6px rgba(0, 0, 0, 0.15); display: flex; align-items: center; gap: 6px; padding: 10px 12px; text-decoration: none; font-family: 'Plus Jakarta Sans', sans-serif;"
+         title="Bagikan Halaman ini (WhatsApp, Sosmed)"
+         aria-label="Bagikan Halaman ini">
+        <span style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 9999px; background-color: rgba(15, 23, 42, 0.22);">
+          <svg style="width: 14px; height: 14px; fill: none; stroke: #FFFFFF; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;" viewBox="0 0 24 24">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+        </span>
+        <span style="font-weight: 800; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: #FFFFFF;">Share</span>
+      </a>
+    </div>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
