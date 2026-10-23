@@ -132,30 +132,53 @@ export const FloatingShare: React.FC = () => {
   return (
     <>
       {/* 
-        FLOATING SHARE BUTTON
-        Positioned along the left screen edge (vertically centered).
-        Crucial requirement: 'posisi jangan menghalangi konten'.
-        Docking at the left margin protrudes only ~36px, completely leaving
-        100% of the centered article, form, and CTA content unobstructed!
+        FLOATING SHARE BUTTON (RESILIENT - NEVER DISAPPEARS)
+        Positioned along the left screen edge with high z-index (9999).
+        Includes inline style fallbacks so it renders 100% reliably in any environment.
       */}
-      <div className="fixed left-0 top-[48%] -translate-y-1/2 z-40 select-none">
-        <motion.button
+      <div
+        className="floating-share-btn-wrap fixed left-0 select-none z-[9999]"
+        style={{
+          position: 'fixed',
+          left: 0,
+          top: '48%',
+          transform: 'translateY(-50%)',
+          zIndex: 9999,
+        }}
+      >
+        <button
+          type="button"
+          id="open-share-modal-btn"
           onClick={() => setIsOpen(true)}
-          whileHover={{ x: 3 }}
-          whileTap={{ scale: 0.95 }}
-          className="group flex items-center gap-1.5 py-2.5 px-2.5 sm:px-3 bg-gradient-to-r from-amber-500 via-[#F58220] to-[#E65100] hover:from-amber-400 hover:to-[#D96B00] text-white rounded-r-2xl shadow-[0_4px_18px_rgba(245,130,32,0.45),0_2px_6px_rgba(0,0,0,0.12)] hover:shadow-[0_6px_22px_rgba(245,130,32,0.6)] border-y border-r border-amber-200/90 transition-all cursor-pointer ring-1 ring-white/30"
+          className="floating-share-btn group flex items-center gap-1.5 py-2.5 px-2.5 sm:px-3 text-white rounded-r-2xl cursor-pointer"
+          style={{
+            background: 'linear-gradient(135deg, #F59E0B 0%, #F58220 50%, #EA580C 100%)',
+            color: '#FFFFFF',
+            borderTopRightRadius: '16px',
+            borderBottomRightRadius: '16px',
+            borderTopLeftRadius: '0',
+            borderBottomLeftRadius: '0',
+            border: '1px solid rgba(254, 215, 170, 0.85)',
+            borderLeft: 'none',
+            boxShadow: '0 4px 18px rgba(245, 130, 32, 0.45), 0 2px 6px rgba(0, 0, 0, 0.15)',
+            display: 'flex',
+            alignItems: 'center',
+          }}
           title="Bagikan Halaman ini (WhatsApp, Telegram, Email, Sosmed)"
           aria-label="Bagikan ke Media Sosial"
         >
           {/* Animated Share Icon with clean contrast badge */}
-          <span className="relative flex items-center justify-center w-6 h-6 rounded-full bg-slate-950/20 group-hover:bg-slate-950/30 transition-colors shadow-xs">
+          <span
+            className="relative flex items-center justify-center w-6 h-6 rounded-full bg-slate-950/20 group-hover:bg-slate-950/30 transition-colors shadow-xs"
+            style={{ backgroundColor: 'rgba(15, 23, 42, 0.22)' }}
+          >
             <Share2 className="w-3.5 h-3.5 text-white stroke-[2.5] group-hover:rotate-12 transition-transform" />
           </span>
-          {/* Vertical / Compact Label */}
+          {/* Label */}
           <span className="hidden sm:inline-block font-black text-[11px] tracking-wider uppercase text-white drop-shadow-xs">
             Share
           </span>
-        </motion.button>
+        </button>
       </div>
 
       {/* SHARE MODAL OVERLAY */}
