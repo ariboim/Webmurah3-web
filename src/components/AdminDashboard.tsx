@@ -546,21 +546,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <span>Masuk ke Dashboard</span>
               </button>
             </form>
-
-            {/* Default credentials reminder note for the owner */}
-            <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 text-[11px] text-amber-900 space-y-1">
-              <div className="font-extrabold flex items-center gap-1.5 text-amber-950">
-                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                <span>Informasi Akun Default Admin:</span>
-              </div>
-              <p className="text-amber-800 leading-relaxed">
-                Username bawaan: <code className="bg-white/80 px-1 py-0.5 rounded font-mono font-bold text-amber-950">admin</code><br />
-                Password bawaan: <code className="bg-white/80 px-1 py-0.5 rounded font-mono font-bold text-amber-950">admin123</code>
-              </p>
-              <p className="text-amber-700 italic text-[10px] pt-0.5">
-                *Anda dapat mengganti username dan password kapan saja melalui tab <strong>"Pengaturan Akun"</strong> di dalam dashboard setelah login.
-              </p>
-            </div>
           </div>
         </div>
       </div>
