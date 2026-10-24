@@ -23,7 +23,9 @@ import {
 } from 'lucide-react';
 import {
   Article,
+  ArticleCategory,
   getAllArticles,
+  getAllCategories,
 } from '../utils/articleStorage';
 import {
   convertYouTubeEmbedUrl,
@@ -67,21 +69,49 @@ export const ArticlesPageSection: React.FC<ArticlesPageSectionProps> = ({
     }
 
     setNewsletterStatus('loading');
-    setTimeout(() => {
-      try {
-        const stored = localStorage.getItem('webmurah_newsletter_subs');
-        const list = stored ? JSON.parse(stored) : [];
-        if (!list.includes(trimmed)) {
-          list.push(trimmed);
-          localStorage.setItem('webmurah_newsletter_subs', JSON.stringify(list));
+    
+    // Call server endpoint to store subscriber and send welcome email
+    fetch('/api/newsletter/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: trimmed }),
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal mendaftar newsletter.');
         }
-      } catch (err) {
-        console.error(err);
-      }
+        return data;
+      })
+      .then((data) => {
+        try {
+          const stored = localStorage.getItem('webmurah_newsletter_subs');
+          const list = stored ? JSON.parse(stored) : [];
+          if (!list.includes(trimmed)) {
+            list.push(trimmed);
+            localStorage.setItem('webmurah_newsletter_subs', JSON.stringify(list));
+          }
+        } catch {}
 
-      setNewsletterStatus('success');
-      setNewsletterMessage(`Pendaftaran berhasil! Email ${trimmed} telah terdaftar untuk menerima studi kasus & tips UMKM mingguan.`);
-    }, 400);
+        setNewsletterStatus('success');
+        setNewsletterMessage(data.message || `Pendaftaran berhasil! Email ${trimmed} telah terdaftar untuk menerima studi kasus & tips UMKM mingguan.`);
+      })
+      .catch((err) => {
+        // Fallback to local storage if offline or server issue
+        try {
+          const stored = localStorage.getItem('webmurah_newsletter_subs');
+          const list = stored ? JSON.parse(stored) : [];
+          if (!list.includes(trimmed)) {
+            list.push(trimmed);
+            localStorage.setItem('webmurah_newsletter_subs', JSON.stringify(list));
+          }
+          setNewsletterStatus('success');
+          setNewsletterMessage(`Pendaftaran berhasil! Email ${trimmed} telah terdaftar untuk menerima update.`);
+        } catch {
+          setNewsletterStatus('error');
+          setNewsletterMessage(err.message || 'Terjadi kendala saat mendaftarkan email.');
+        }
+      });
   };
 
   const handleResetNewsletter = () => {
@@ -90,19 +120,33 @@ export const ArticlesPageSection: React.FC<ArticlesPageSectionProps> = ({
     setNewsletterMessage('');
   };
 
-  // Listen to article updates from admin dashboard
+  const [savedCategories, setSavedCategories] = useState<ArticleCategory[]>(getAllCategories);
+
+  // Listen to article & category updates from admin dashboard
   useEffect(() => {
     const handleArticlesUpdated = () => {
       setArticles(getAllArticles());
     };
+    const handleCategoriesUpdated = () => {
+      setSavedCategories(getAllCategories());
+    };
     window.addEventListener('articles-updated', handleArticlesUpdated);
-    return () => window.removeEventListener('articles-updated', handleArticlesUpdated);
+    window.addEventListener('categories-updated', handleCategoriesUpdated);
+    return () => {
+      window.removeEventListener('articles-updated', handleArticlesUpdated);
+      window.removeEventListener('categories-updated', handleCategoriesUpdated);
+    };
   }, []);
 
-  // Compute unique dynamic categories from articles
+  // Compute unique dynamic categories from articles and saved categories
   const categories = [
     { id: 'all', label: 'Semua Artikel' },
-    ...Array.from(new Set(articles.map((a) => a.category))).map((cat) => ({
+    ...Array.from(
+      new Set([
+        ...articles.map((a) => a.category),
+        ...savedCategories.filter((c) => c.isCustom).map((c) => c.name),
+      ])
+    ).map((cat) => ({
       id: cat,
       label: cat,
     })),

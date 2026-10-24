@@ -28,14 +28,27 @@ import {
   Calendar,
   Save,
   RotateCcw,
+  Mail,
+  Send,
+  Users,
+  Copy,
+  Inbox,
+  X,
+  Tag,
+  Search,
 } from 'lucide-react';
 import {
   Article,
+  ArticleCategory,
   getAllArticles,
   getCustomArticlesOnly,
   saveArticle,
   deleteArticle,
   resetArticlesToDefault,
+  getAllCategories,
+  saveCategory,
+  deleteCategory,
+  resetCategoriesToDefault,
   getAdminCredentials,
   verifyAdminLogin,
   updateAdminCredentials,
@@ -58,7 +71,18 @@ interface AdminDashboardProps {
   onNavigateToHome: () => void;
 }
 
-type AdminTab = 'create' | 'list' | 'settings';
+type AdminTab = 'create' | 'list' | 'categories' | 'newsletter' | 'settings';
+
+export const CATEGORY_COLOR_PRESETS = [
+  { id: 'sky', label: 'Biru (Sky)', color: 'bg-sky-50 text-sky-800 border-sky-200', dot: 'bg-sky-500' },
+  { id: 'amber', label: 'Kuning / Emas (Amber)', color: 'bg-amber-50 text-amber-800 border-amber-200', dot: 'bg-amber-500' },
+  { id: 'indigo', label: 'Ungu Indigo', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', dot: 'bg-indigo-600' },
+  { id: 'emerald', label: 'Hijau Zamrud (Emerald)', color: 'bg-emerald-50 text-emerald-800 border-emerald-200', dot: 'bg-emerald-500' },
+  { id: 'rose', label: 'Merah Mawar (Rose)', color: 'bg-rose-50 text-rose-800 border-rose-200', dot: 'bg-rose-500' },
+  { id: 'purple', label: 'Ungu Violet (Purple)', color: 'bg-purple-50 text-purple-800 border-purple-200', dot: 'bg-purple-500' },
+  { id: 'teal', label: 'Teal / Toska', color: 'bg-teal-50 text-teal-800 border-teal-200', dot: 'bg-teal-500' },
+  { id: 'slate', label: 'Abu-Abu Netral (Slate)', color: 'bg-slate-100 text-slate-800 border-slate-300', dot: 'bg-slate-500' },
+];
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onNavigateToPublicArticles,
@@ -78,6 +102,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Articles State
   const [articles, setArticles] = useState<Article[]>([]);
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+  const [articleSearchQuery, setArticleSearchQuery] = useState('');
+  const [articleDeleteModal, setArticleDeleteModal] = useState<{ id: string; title: string; isCustom?: boolean } | null>(null);
+  const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
+
+  // Categories State
+  const [categories, setCategories] = useState<ArticleCategory[]>(getAllCategories);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatColor, setNewCatColor] = useState('bg-sky-50 text-sky-800 border-sky-200');
+  const [categoryNotice, setCategoryNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Form State for Article Input
   const [formTitle, setFormTitle] = useState('');
@@ -125,15 +158,99 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [settingsNotice, setSettingsNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Load articles on mount & sync admin username
+  // Newsletter & Subscribers State
+  const [subscribers, setSubscribers] = useState<Array<{ email: string; subscribedAt: string; status: string }>>([]);
+  const [sendNewsletterOnPost, setSendNewsletterOnPost] = useState<boolean>(true);
+  const [isBroadcasting, setIsBroadcasting] = useState<boolean>(false);
+  const [broadcastModal, setBroadcastModal] = useState<any | null>(null);
+  const [newManualEmail, setNewManualEmail] = useState<string>('');
+  const [manualBroadcastArticleId, setManualBroadcastArticleId] = useState<string>('');
+  const [smtpConfig, setSmtpConfig] = useState<any>({
+    host: 'smtp.gmail.com',
+    port: 465,
+    user: '',
+    pass: '',
+    fromName: 'Webkilat / Indo Digital',
+    fromEmail: '',
+    isConfigured: false,
+  });
+  const [smtpNotice, setSmtpNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isSavingSmtp, setIsSavingSmtp] = useState<boolean>(false);
+
+  const fetchSubscribers = () => {
+    fetch('/api/newsletter/subscribers')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.subscribers) setSubscribers(data.subscribers);
+      })
+      .catch((err) => console.error('Fetch subscribers error:', err));
+  };
+
+  const fetchSmtpConfig = () => {
+    fetch('/api/newsletter/smtp-config')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data) setSmtpConfig((prev: any) => ({ ...prev, ...data }));
+      })
+      .catch((err) => console.error('Fetch SMTP error:', err));
+  };
+
+  // Load articles & categories on mount & sync admin username & newsletter data
   useEffect(() => {
     refreshArticles();
+    setCategories(getAllCategories());
     const creds = getAdminCredentials();
     setCurrentAdminUser(creds.username);
+    if (isAuthenticated) {
+      fetchSubscribers();
+      fetchSmtpConfig();
+    }
+
+    const onCatsUpdated = () => setCategories(getAllCategories());
+    const onArtsUpdated = () => refreshArticles();
+    window.addEventListener('categories-updated', onCatsUpdated);
+    window.addEventListener('articles-updated', onArtsUpdated);
+    return () => {
+      window.removeEventListener('categories-updated', onCatsUpdated);
+      window.removeEventListener('articles-updated', onArtsUpdated);
+    };
   }, [isAuthenticated]);
 
   const refreshArticles = () => {
     setArticles(getAllArticles());
+  };
+
+  const handleAddCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCategoryNotice(null);
+    if (!newCatName.trim()) {
+      setCategoryNotice({ type: 'error', text: 'Nama kategori wajib diisi.' });
+      return;
+    }
+    const res = saveCategory(newCatName, newCatColor);
+    if (res.success) {
+      setCategoryNotice({ type: 'success', text: res.message });
+      setNewCatName('');
+      setCategories(getAllCategories());
+    } else {
+      setCategoryNotice({ type: 'error', text: res.message });
+    }
+  };
+
+  const handleDeleteCategory = (catId: string, name: string) => {
+    if (window.confirm(`Yakin ingin menghapus kategori "${name}"? Kategori ini tidak akan lagi muncul di pilihan baru.`)) {
+      deleteCategory(catId);
+      setCategories(getAllCategories());
+      setCategoryNotice({ type: 'success', text: `Kategori "${name}" berhasil dihapus.` });
+    }
+  };
+
+  const handleResetCategories = () => {
+    if (window.confirm('Reset daftar kategori ke setelan bawaan sistem? Kategori kustom akan dihapus.')) {
+      resetCategoriesToDefault();
+      setCategories(getAllCategories());
+      setCategoryNotice({ type: 'success', text: 'Kategori berhasil direset ke bawaan sistem.' });
+    }
   };
 
   // Sync Final Image URL based on chosen mode
@@ -319,16 +436,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         ? formCustomCategory.trim()
         : formCategory;
 
-    // Determine category badge style
-    let categoryColor = 'bg-sky-50 text-sky-800 border-sky-200';
-    if (selectedCategory.includes('Kuliner')) {
-      categoryColor = 'bg-amber-50 text-amber-800 border-amber-200';
-    } else if (selectedCategory.includes('Kreatif') || selectedCategory.includes('Jasa')) {
-      categoryColor = 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    } else if (selectedCategory.includes('Riset') || selectedCategory.includes('Data')) {
-      categoryColor = 'bg-emerald-50 text-emerald-800 border-emerald-200';
-    } else if (selectedCategory.includes('Fashion')) {
-      categoryColor = 'bg-rose-50 text-rose-800 border-rose-200';
+    // Determine category badge style from saved categories or presets
+    const foundCategory = categories.find(
+      (c) => c.name.toLowerCase() === selectedCategory.toLowerCase()
+    );
+    let categoryColor = foundCategory ? foundCategory.color : 'bg-sky-50 text-sky-800 border-sky-200';
+    if (!foundCategory) {
+      if (selectedCategory.includes('Kuliner')) {
+        categoryColor = 'bg-amber-50 text-amber-800 border-amber-200';
+      } else if (selectedCategory.includes('Kreatif') || selectedCategory.includes('Jasa')) {
+        categoryColor = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      } else if (selectedCategory.includes('Riset') || selectedCategory.includes('Data')) {
+        categoryColor = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+      } else if (selectedCategory.includes('Fashion')) {
+        categoryColor = 'bg-rose-50 text-rose-800 border-rose-200';
+      }
+      // If user typed a custom category on the fly, auto-save it to persistent categories
+      if (formCategory === 'Lainnya' && formCustomCategory.trim()) {
+        saveCategory(formCustomCategory.trim(), categoryColor);
+      }
     }
 
     // Prepare strategies array if in structured mode
@@ -383,6 +509,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           : 'Artikel baru berhasil diterbitkan dan otomatis muncul di Navtab Artikel!'
       );
       refreshArticles();
+
+      // Push email broadcast to newsletter subscribers
+      if (sendNewsletterOnPost) {
+        setIsBroadcasting(true);
+        fetch('/api/newsletter/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            articleId: newArticle.id,
+            title: newArticle.title,
+            subtitle: newArticle.subtitle,
+            category: newArticle.category,
+            summary: newArticle.summary,
+            readTime: newArticle.readTime,
+            imageUrl: newArticle.imageUrl,
+            articleUrl: 'https://webmurah.biz.id/#/artikel',
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            setIsBroadcasting(false);
+            if (data.success) {
+              setBroadcastModal({
+                title: newArticle.title,
+                count: data.subscriberCount,
+                recipients: data.recipients,
+                smtpSent: data.smtpSent,
+                smtpError: data.smtpError,
+                mailtoUrl: data.mailtoUrl,
+                subject: data.subject,
+                preview: data.emailBodyPreview,
+              });
+            }
+          })
+          .catch((err) => {
+            setIsBroadcasting(false);
+            console.error('Broadcast trigger error:', err);
+          });
+      }
+
       if (!editingArticleId) {
         resetForm();
       }
@@ -392,14 +558,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Handle Delete Article
-  const handleDeleteArticle = (id: string, title: string) => {
-    if (window.confirm(`Yakin ingin menghapus artikel "${title}"?`)) {
-      deleteArticle(id);
-      refreshArticles();
-      if (editingArticleId === id) {
-        resetForm();
-      }
+  const promptDeleteArticle = (id: string, title: string, isCustom?: boolean) => {
+    setArticleDeleteModal({ id, title, isCustom });
+  };
+
+  const confirmDeleteArticle = (id: string) => {
+    const found = articles.find((a) => a.id === id);
+    const title = found?.title || 'Artikel';
+    deleteArticle(id);
+    refreshArticles();
+    if (editingArticleId === id) {
+      resetForm();
     }
+    setDeleteNotice(`Artikel "${title}" berhasil dihapus dari website.`);
+    setArticleDeleteModal(null);
+    setTimeout(() => setDeleteNotice(null), 5000);
+  };
+
+  const handleDeleteArticle = (id: string, title: string, isCustom?: boolean) => {
+    promptDeleteArticle(id, title, isCustom);
   };
 
   // Handle Reset Articles
@@ -618,21 +795,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </p>
           </div>
 
-          {/* 3 Main Admin Tabs */}
+          {/* Main Admin Tabs */}
           <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-black w-full sm:w-auto overflow-x-auto">
             <button
               onClick={() => {
                 setActiveTab('create');
                 setFormSuccessMessage('');
               }}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'create'
                   ? 'bg-sky-600 text-white shadow-xs'
                   : 'text-slate-700 hover:text-sky-700 hover:bg-white'
               }`}
             >
               <PlusCircle className="w-4 h-4" />
-              <span>{editingArticleId ? 'Edit Artikel' : 'Input Artikel Baru'}</span>
+              <span>{editingArticleId ? 'Edit Artikel' : 'Input Artikel'}</span>
             </button>
 
             <button
@@ -640,14 +817,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 setActiveTab('list');
                 setFormSuccessMessage('');
               }}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'list'
                   ? 'bg-sky-600 text-white shadow-xs'
                   : 'text-slate-700 hover:text-sky-700 hover:bg-white'
               }`}
             >
-              <FileText className="w-4 h-4" />
-              <span>Daftar Artikel ({articles.length})</span>
+              <Trash2 className="w-4 h-4 text-rose-500" />
+              <span>Daftar &amp; Hapus Artikel ({articles.length})</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab('categories');
+                setFormSuccessMessage('');
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'categories'
+                  ? 'bg-sky-600 text-white shadow-xs'
+                  : 'text-slate-700 hover:text-sky-700 hover:bg-white'
+              }`}
+            >
+              <Tag className="w-4 h-4 text-emerald-500" />
+              <span>Kelola Kategori ({categories.length})</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab('newsletter');
+                setFormSuccessMessage('');
+                fetchSubscribers();
+                fetchSmtpConfig();
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'newsletter'
+                  ? 'bg-sky-600 text-white shadow-xs'
+                  : 'text-slate-700 hover:text-sky-700 hover:bg-white'
+              }`}
+            >
+              <Mail className="w-4 h-4 text-amber-500" />
+              <span>Newsletter ({subscribers.length})</span>
             </button>
 
             <button
@@ -655,14 +864,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 setActiveTab('settings');
                 setFormSuccessMessage('');
               }}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'settings'
                   ? 'bg-sky-600 text-white shadow-xs'
                   : 'text-slate-700 hover:text-sky-700 hover:bg-white'
               }`}
             >
               <Settings className="w-4 h-4" />
-              <span>Ganti Akun Admin</span>
+              <span>Akun Admin</span>
             </button>
           </div>
         </div>
@@ -757,28 +966,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {/* Kategori & Waktu Baca */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="block text-xs font-bold text-slate-700">
-                        Kategori
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-bold text-slate-700">
+                          Kategori
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('categories')}
+                          className="text-[11px] font-bold text-sky-600 hover:text-sky-800 flex items-center gap-1 cursor-pointer"
+                        >
+                          <Tag className="w-3 h-3 text-emerald-500" />
+                          <span>+ Kelola Kategori</span>
+                        </button>
+                      </div>
                       <select
                         value={formCategory}
                         onChange={(e) => setFormCategory(e.target.value)}
                         className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-sky-500 focus:outline-hidden bg-white"
                       >
-                        <option value="Tips Bisnis & Marketing">Tips Bisnis &amp; Marketing</option>
-                        <option value="Kuliner & Makanan Kemasan">Kuliner &amp; Makanan Kemasan</option>
-                        <option value="Jasa & Produk Kreatif">Jasa &amp; Produk Kreatif</option>
-                        <option value="Fashion & Retail">Fashion &amp; Retail</option>
-                        <option value="Riset & Data Nasional">Riset &amp; Data Nasional</option>
-                        <option value="Kisah Sukses UMKM">Kisah Sukses UMKM</option>
-                        <option value="Lainnya">Lainnya (Ketik Sendiri)</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.name}>
+                            {cat.name} {cat.isCustom ? '★ (Kategori Admin)' : ''}
+                          </option>
+                        ))}
+                        <option value="Lainnya">+ Tambah Kategori Lainnya (Ketik Manual)</option>
                       </select>
                       {formCategory === 'Lainnya' && (
                         <input
                           type="text"
                           value={formCustomCategory}
                           onChange={(e) => setFormCustomCategory(e.target.value)}
-                          placeholder="Ketik kategori baru..."
+                          placeholder="Ketik kategori baru (otomatis tersimpan)..."
                           className="w-full mt-2 px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-hidden"
                         />
                       )}
@@ -1241,8 +1459,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <p className="text-xs text-sky-100 leading-relaxed">
                     Artikel akan otomatis tersimpan dan langsung muncul di Navtab Artikel (bagian atas) untuk dibaca semua pengunjung website.
                   </p>
+
+                  {/* Push Newsletter Broadcast Checkbox */}
+                  <div className="p-3.5 rounded-2xl bg-white/10 border border-white/20 space-y-1">
+                    <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-white">
+                      <input
+                        type="checkbox"
+                        checked={sendNewsletterOnPost}
+                        onChange={(e) => setSendNewsletterOnPost(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 rounded text-sky-500 focus:ring-sky-400 cursor-pointer"
+                      />
+                      <div>
+                        <span className="block text-amber-300 font-extrabold flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5" />
+                          Push Email Newsletter Otomatis ({subscribers.length} Subscriber)
+                        </span>
+                        <span className="text-[11px] text-sky-100 font-normal leading-tight block pt-0.5">
+                          Kirim notifikasi email otomatis ke subscriber newsletter (termasuk bca.ccpl@gmail.com) saat artikel dipublikasikan.
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+
                   <button
                     type="submit"
+                    disabled={isBroadcasting}
                     className="w-full py-3.5 px-4 rounded-2xl bg-amber-400 hover:bg-yellow-300 active:scale-98 text-slate-950 font-black text-sm shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
                     <Save className="w-4 h-4" />
@@ -1267,18 +1508,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* TAB 2: DAFTAR & KELOLA SEMUA ARTIKEL */}
+        {/* TAB 2: DAFTAR & MENU HAPUS ARTIKEL */}
         {/* ========================================================= */}
         {activeTab === 'list' && (
           <div className="space-y-6">
             <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div>
-                  <h2 className="text-lg font-black text-slate-900">
-                    Daftar Semua Artikel ({articles.length})
+                  <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                    <Trash2 className="w-5 h-5 text-rose-500" />
+                    <span>Menu Manajemen &amp; Hapus Artikel ({articles.length})</span>
                   </h2>
-                  <p className="text-xs text-slate-500">
-                    Kelola artikel buatan admin atau lihat artikel bawaan sistem
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Kelola, edit, atau hapus artikel apa pun (baik artikel buatan admin maupun artikel bawaan sistem) agar website selalu mutakhir.
                   </p>
                 </div>
 
@@ -1299,7 +1541,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     type="button"
                     onClick={handleResetToDefault}
                     className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                    title="Reset semua artikel ke bawaan"
+                    title="Reset semua artikel ke bawaan sistem"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Reset Bawaan</span>
@@ -1307,9 +1549,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               </div>
 
+              {deleteNotice && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2 animate-fade-in">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{deleteNotice}</span>
+                </div>
+              )}
+
+              {/* Search Box */}
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={articleSearchQuery}
+                  onChange={(e) => setArticleSearchQuery(e.target.value)}
+                  placeholder="Cari artikel berdasarkan judul, kategori, atau isi ringkasan..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-sky-500 focus:outline-hidden bg-slate-50/50"
+                />
+              </div>
+
               {/* Table or Cards of Articles */}
               <div className="space-y-3">
-                {articles.map((article) => (
+                {articles
+                  .filter((a) => {
+                    if (!articleSearchQuery.trim()) return true;
+                    const q = articleSearchQuery.toLowerCase();
+                    return (
+                      a.title.toLowerCase().includes(q) ||
+                      a.category.toLowerCase().includes(q) ||
+                      (a.summary && a.summary.toLowerCase().includes(q))
+                    );
+                  })
+                  .map((article) => (
                   <div
                     key={article.id}
                     className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${
@@ -1318,7 +1589,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         : 'bg-slate-50/60 border-slate-200 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-start sm:items-center gap-4 flex-1">
+                    <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
                       {/* Thumbnail */}
                       <div className="w-20 h-16 sm:w-24 sm:h-20 rounded-xl overflow-hidden bg-slate-200 shrink-0 border border-slate-200">
                         {article.imageUrl ? (
@@ -1335,7 +1606,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </div>
 
                       {/* Text info */}
-                      <div className="space-y-1 flex-1">
+                      <div className="space-y-1 flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span
                             className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md border ${article.categoryColor}`}
@@ -1370,7 +1641,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </div>
                     </div>
 
-                    {/* Actions */}
+                    {/* Actions: Edit & Universal Hapus Button */}
                     <div className="flex items-center gap-2 self-end md:self-center shrink-0">
                       <button
                         onClick={() => handleStartEdit(article)}
@@ -1381,19 +1652,210 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <span>Edit</span>
                       </button>
 
-                      {article.isCustom && (
-                        <button
-                          onClick={() => handleDeleteArticle(article.id, article.title)}
-                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
-                          title="Hapus Artikel"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Hapus</span>
-                        </button>
-                      )}
+                      <button
+                        onClick={() => promptDeleteArticle(article.id, article.title, article.isCustom)}
+                        className="px-3 py-1.5 rounded-xl bg-white hover:bg-rose-600 hover:text-white text-rose-600 border border-rose-200 text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shadow-2xs group"
+                        title="Hapus Artikel dari Website"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                        <span>Hapus</span>
+                      </button>
                     </div>
                   </div>
                 ))}
+
+                {articles.length === 0 && (
+                  <div className="text-center py-12 text-slate-500 space-y-2">
+                    <p className="text-sm font-bold">Semua artikel telah dihapus.</p>
+                    <button
+                      onClick={handleResetToDefault}
+                      className="text-xs text-sky-600 hover:underline cursor-pointer font-bold"
+                    >
+                      Klik di sini untuk mengembalikan artikel bawaan sistem
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* TAB 3: KELOLA & TAMBAH KATEGORI ARTIKEL */}
+        {/* ========================================================= */}
+        {activeTab === 'categories' && (
+          <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
+            {/* Header info */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <Tag className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900">
+                      Kelola Kategori Artikel
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Tambah kategori baru dengan warna badge pilihan. Kategori tersimpan permanen dan otomatis muncul di formulir artikel dan filter pembaca.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleResetCategories}
+                  className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                  title="Kembalikan kategori ke setelan bawaan sistem"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Kategori Default</span>
+                </button>
+              </div>
+
+              {categoryNotice && (
+                <div
+                  className={`p-4 rounded-2xl text-xs flex items-center gap-2 font-bold animate-fade-in ${
+                    categoryNotice.type === 'success'
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                      : 'bg-rose-50 text-rose-800 border border-rose-200'
+                  }`}
+                >
+                  {categoryNotice.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  )}
+                  <span>{categoryNotice.text}</span>
+                </div>
+              )}
+
+              {/* Form Tambah Kategori Baru */}
+              <form onSubmit={handleAddCategory} className="bg-slate-50/80 rounded-2xl p-5 sm:p-6 border border-slate-200/80 space-y-5">
+                <div className="flex items-center gap-2">
+                  <PlusCircle className="w-4 h-4 text-emerald-600" />
+                  <h3 className="text-sm font-black text-slate-900">Tambah Kategori Baru</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Nama Kategori <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newCatName}
+                      onChange={(e) => setNewCatName(e.target.value)}
+                      placeholder="Contoh: Tutorial WordPress, Tips Finansial UMKM..."
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden bg-white"
+                    />
+                    <p className="text-[10px] text-slate-400">
+                      Nama kategori yang akan tertera pada badge artikel dan filter pembaca.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Pilih Warna Badge
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {CATEGORY_COLOR_PRESETS.map((preset) => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => setNewCatColor(preset.color)}
+                          className={`p-2 rounded-xl border text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                            newCatColor === preset.color
+                              ? 'border-emerald-600 ring-2 ring-emerald-500/30 bg-white'
+                              : 'border-slate-200 bg-white/70 hover:bg-white'
+                          }`}
+                        >
+                          <span className={`w-3 h-3 rounded-full shrink-0 ${preset.dot}`} />
+                          <span className="truncate">{preset.label.split(' ')[0]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preview Badge */}
+                <div className="pt-3 border-t border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-500">Pratinjau Badge:</span>
+                    <span className={`text-xs font-black uppercase px-2.5 py-1 rounded-md border ${newCatColor}`}>
+                      {newCatName.trim() || 'Contoh Kategori'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Simpan Kategori Baru</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Daftar Kategori Aktif */}
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                    <FolderOpen className="w-4 h-4 text-sky-600" />
+                    <span>Daftar Kategori Tersimpan ({categories.length})</span>
+                  </h3>
+                  <span className="text-xs text-slate-400">
+                    {categories.filter((c) => c.isCustom).length} Kategori Dibuat Admin
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {categories.map((cat) => {
+                    const articleCount = articles.filter(
+                      (a) => a.category.toLowerCase() === cat.name.toLowerCase()
+                    ).length;
+
+                    return (
+                      <div
+                        key={cat.id}
+                        className={`p-4 rounded-2xl border flex items-center justify-between gap-3 transition-all ${
+                          cat.isCustom
+                            ? 'bg-emerald-50/30 border-emerald-200'
+                            : 'bg-white border-slate-200'
+                        }`}
+                      >
+                        <div className="space-y-1 min-w-0">
+                          <span
+                            className={`inline-block text-[11px] font-black uppercase px-2.5 py-0.5 rounded-md border truncate max-w-full ${cat.color}`}
+                          >
+                            {cat.name}
+                          </span>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                            <span>{articleCount} Artikel</span>
+                            <span>•</span>
+                            <span>{cat.isCustom ? 'Kategori Admin' : 'Kategori Bawaan'}</span>
+                          </div>
+                        </div>
+
+                        {cat.isCustom ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                            className="p-2 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs"
+                            title="Hapus Kategori Ini"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-semibold px-2 py-1 bg-slate-100 rounded-lg shrink-0">
+                            Sistem
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -1520,7 +1982,567 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
         )}
+
+        {/* ========================================================= */}
+        {/* TAB 4: NEWSLETTER & SUBSCRIBER MANAGEMENT */}
+        {/* ========================================================= */}
+        {activeTab === 'newsletter' && (
+          <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
+            {/* Top Summary Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black text-slate-900">{subscribers.length}</div>
+                  <div className="text-xs font-semibold text-slate-500">Subscriber Aktif</div>
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                  smtpConfig.isConfigured ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                }`}>
+                  <Send className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-sm font-black text-slate-900">
+                    {smtpConfig.isConfigured ? 'SMTP Terhubung' : 'Mode Siap / Gmail'}
+                  </div>
+                  <div className="text-xs font-semibold text-slate-500">
+                    {smtpConfig.isConfigured ? 'Otomatis via Server' : 'Konfigurasi SMTP di bawah'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                  <Mail className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-sm font-black text-slate-900">Push Otomatis</div>
+                  <div className="text-xs font-semibold text-slate-500">Aktif saat Post Artikel</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 1: Daftar Subscriber & Tambah Manual */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                <div>
+                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-sky-600" />
+                    <span>Daftar Email Pelanggan Newsletter</span>
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Semua email yang mendaftar melalui form artikel akan muncul di sini dan menerima update
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const all = subscribers.map((s) => s.email).join(', ');
+                      navigator.clipboard.writeText(all);
+                      alert(`Berhasil menyalin ${subscribers.length} email ke clipboard!`);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Salin Semua Email</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Form Tambah Email Manual */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!newManualEmail.trim()) return;
+                  fetch('/api/newsletter/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: newManualEmail.trim() }),
+                  })
+                    .then((r) => r.json())
+                    .then(() => {
+                      setNewManualEmail('');
+                      fetchSubscribers();
+                    });
+                }}
+                className="flex flex-col sm:flex-row gap-2 max-w-xl"
+              >
+                <input
+                  type="email"
+                  required
+                  value={newManualEmail}
+                  onChange={(e) => setNewManualEmail(e.target.value)}
+                  placeholder="Tambahkan email subscriber baru (contoh: pelanggan@gmail.com)"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:ring-2 focus:ring-sky-500 focus:outline-hidden"
+                />
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs cursor-pointer shadow-xs whitespace-nowrap"
+                >
+                  + Tambahkan Email
+                </button>
+              </form>
+
+              {/* Tabel Subscriber */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border border-slate-100 rounded-xl overflow-hidden">
+                  <thead className="bg-slate-50 text-slate-700 uppercase font-black tracking-wider text-[10px]">
+                    <tr>
+                      <th className="p-3">Email Subscriber</th>
+                      <th className="p-3">Tanggal Terdaftar</th>
+                      <th className="p-3">Status</th>
+                      <th className="p-3 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {subscribers.map((sub, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/60">
+                        <td className="p-3 font-bold text-slate-900">
+                          {sub.email}
+                          {sub.email === 'bca.ccpl@gmail.com' && (
+                            <span className="ml-2 text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md font-extrabold">
+                              Akun Anda
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-slate-500">
+                          {new Date(sub.subscribedAt).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">
+                            {sub.status || 'active'}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Hapus subscriber ${sub.email}?`)) {
+                                fetch(`/api/newsletter/subscribers/${encodeURIComponent(sub.email)}`, {
+                                  method: 'DELETE',
+                                }).then(() => fetchSubscribers());
+                              }
+                            }}
+                            className="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer"
+                          >
+                            Hapus
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Section 2: Manual Broadcast Tool */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-5">
+              <div className="pb-3 border-b border-slate-100">
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <Send className="w-5 h-5 text-indigo-600" />
+                  <span>Kirim Broadcast Email Newsletter Manual</span>
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Kirim ulang pemberitahuan artikel tertentu kapan saja ke seluruh subscriber
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                <div className="sm:col-span-8 space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Pilih Artikel yang Ingin Dikirimkan:
+                  </label>
+                  <select
+                    value={manualBroadcastArticleId}
+                    onChange={(e) => setManualBroadcastArticleId(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-sky-500 focus:outline-hidden bg-white"
+                  >
+                    <option value="">-- Pilih Artikel --</option>
+                    {articles.map((art) => (
+                      <option key={art.id} value={art.id}>
+                        [{art.category}] {art.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="sm:col-span-4">
+                  <button
+                    type="button"
+                    disabled={!manualBroadcastArticleId || isBroadcasting}
+                    onClick={() => {
+                      const selected = articles.find((a) => a.id === manualBroadcastArticleId);
+                      if (!selected) return;
+
+                      setIsBroadcasting(true);
+                      fetch('/api/newsletter/broadcast', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          articleId: selected.id,
+                          title: selected.title,
+                          subtitle: selected.subtitle,
+                          category: selected.category,
+                          summary: selected.summary,
+                          readTime: selected.readTime,
+                          imageUrl: selected.imageUrl,
+                          articleUrl: 'https://webmurah.biz.id/#/artikel',
+                        }),
+                      })
+                        .then((r) => r.json())
+                        .then((data) => {
+                          setIsBroadcasting(false);
+                          if (data.success) {
+                            setBroadcastModal({
+                              title: selected.title,
+                              count: data.subscriberCount,
+                              recipients: data.recipients,
+                              smtpSent: data.smtpSent,
+                              smtpError: data.smtpError,
+                              mailtoUrl: data.mailtoUrl,
+                              subject: data.subject,
+                              preview: data.emailBodyPreview,
+                            });
+                          }
+                        })
+                        .catch((err) => {
+                          setIsBroadcasting(false);
+                          alert('Gagal mengirim broadcast: ' + err.message);
+                        });
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{isBroadcasting ? 'Mengirim...' : 'Kirim Push Email Sekarang'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3: Pengaturan SMTP Pengirim Otomatis */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
+              <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-sky-600" />
+                    <span>Konfigurasi SMTP Email Pengirim (Otomatisasi Latar Belakang)</span>
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Hubungkan akun email (seperti Gmail SMTP) agar pengiriman email push berjalan 100% otomatis dari server
+                  </p>
+                </div>
+                <span className={`text-[10px] px-2.5 py-1 rounded-full font-black ${
+                  smtpConfig.isConfigured ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {smtpConfig.isConfigured ? '✅ Aktif Terhubung' : '⚠️ Belum Dikonfigurasi'}
+                </span>
+              </div>
+
+              {smtpNotice && (
+                <div className={`p-4 rounded-2xl text-xs flex items-center gap-2 font-bold ${
+                  smtpNotice.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-rose-50 text-rose-800 border border-rose-200'
+                }`}>
+                  {smtpNotice.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  )}
+                  <span>{smtpNotice.text}</span>
+                </div>
+              )}
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setIsSavingSmtp(true);
+                  setSmtpNotice(null);
+
+                  fetch('/api/newsletter/smtp-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(smtpConfig),
+                  })
+                    .then(async (r) => {
+                      const data = await r.json();
+                      if (!r.ok) throw new Error(data.error || 'Gagal menyimpan');
+                      return data;
+                    })
+                    .then((data) => {
+                      setIsSavingSmtp(false);
+                      setSmtpNotice({ type: 'success', text: data.message });
+                      fetchSmtpConfig();
+                    })
+                    .catch((err) => {
+                      setIsSavingSmtp(false);
+                      setSmtpNotice({ type: 'error', text: err.message });
+                    });
+                }}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">SMTP Host</label>
+                    <input
+                      type="text"
+                      value={smtpConfig.host || 'smtp.gmail.com'}
+                      onChange={(e) => setSmtpConfig({ ...smtpConfig, host: e.target.value })}
+                      placeholder="smtp.gmail.com"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">SMTP Port</label>
+                    <input
+                      type="number"
+                      value={smtpConfig.port || 465}
+                      onChange={(e) => setSmtpConfig({ ...smtpConfig, port: Number(e.target.value) })}
+                      placeholder="465 (SSL) atau 587 (TLS)"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Email Akun Pengirim (User)</label>
+                    <input
+                      type="email"
+                      value={smtpConfig.user || ''}
+                      onChange={(e) => setSmtpConfig({ ...smtpConfig, user: e.target.value })}
+                      placeholder="emailanda@gmail.com"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Password Aplikasi (App Password 16 Digit)
+                    </label>
+                    <input
+                      type="password"
+                      value={smtpConfig.pass || ''}
+                      onChange={(e) => setSmtpConfig({ ...smtpConfig, pass: e.target.value })}
+                      placeholder="Password aplikasi 16 karakter tanpa spasi"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Nama Pengirim yang Muncul</label>
+                    <input
+                      type="text"
+                      value={smtpConfig.fromName || 'Webkilat / Indo Digital'}
+                      onChange={(e) => setSmtpConfig({ ...smtpConfig, fromName: e.target.value })}
+                      placeholder="Webkilat by Indo Digital"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">Email Header Pengirim (Opsional)</label>
+                    <input
+                      type="email"
+                      value={smtpConfig.fromEmail || ''}
+                      onChange={(e) => setSmtpConfig({ ...smtpConfig, fromEmail: e.target.value })}
+                      placeholder="no-reply@webmurah.biz.id atau sama dengan user"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-sky-50 border border-sky-200 text-[11px] text-sky-900 space-y-1">
+                  <div className="font-extrabold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+                    <span>Petunjuk Menggunakan Gmail SMTP:</span>
+                  </div>
+                  <p className="text-sky-800 leading-relaxed">
+                    1. Buka <strong>Akun Google &gt; Keamanan &gt; Verifikasi 2 Langkah</strong>.<br />
+                    2. Pada menu <strong>Sandi Aplikasi (App Passwords)</strong>, buat sandi baru untuk <em>Mail / Webkilat</em>.<br />
+                    3. Salin 16 karakter sandi tersebut ke kolom <strong>Password Aplikasi</strong> di atas.<br />
+                    4. Klik tombol <strong>Simpan &amp; Verifikasi SMTP</strong> di bawah.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSavingSmtp}
+                  className="w-full py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-98 text-white font-black text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{isSavingSmtp ? 'Memverifikasi Koneksi SMTP...' : 'Simpan & Verifikasi Koneksi SMTP'}</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* ========================================================= */}
+      {/* POPUP MODAL: HASIL PUSH EMAIL BROADCAST NEWSLETTER */}
+      {/* ========================================================= */}
+      {broadcastModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-5 shadow-2xl relative">
+            <button
+              onClick={() => setBroadcastModal(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Notifikasi Newsletter Terkirim!</span>
+              </div>
+              <h2 className="text-xl font-black text-slate-900 leading-snug">
+                {broadcastModal.title}
+              </h2>
+              <p className="text-xs text-slate-600">
+                Pemberitahuan artikel telah dipersiapkan untuk <strong>{broadcastModal.count} subscriber</strong>.
+              </p>
+            </div>
+
+            {/* Status Delivery Box */}
+            <div className={`p-4 rounded-2xl border text-xs space-y-1.5 ${
+              broadcastModal.smtpSent
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                : 'bg-amber-50 border-amber-200 text-amber-950'
+            }`}>
+              <div className="font-extrabold flex items-center gap-2">
+                {broadcastModal.smtpSent ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Email Berhasil Dikirim Otomatis Melalui Server SMTP!</span>
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4 text-amber-600" />
+                    <span>Siap Dikirim / Buka di Aplikasi Email Anda</span>
+                  </>
+                )}
+              </div>
+              <p className="text-[11px] leading-relaxed">
+                {broadcastModal.smtpSent
+                  ? 'Server telah mem-push email notifikasi langsung ke inbox subscriber tanpa tindakan tambahan.'
+                  : 'Jika Anda belum mengonfigurasi SMTP di tab Newsletter, Anda dapat langsung mengklik tombol di bawah untuk membuka Gmail dengan daftar email penerima otomatis terisi di kolom BCC.'}
+              </p>
+            </div>
+
+            {/* Recipient Pills */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-slate-600">Daftar Penerima ({broadcastModal.count}):</span>
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-100">
+                {broadcastModal.recipients.map((rec: string, i: number) => (
+                  <span key={i} className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-mono text-slate-700">
+                    {rec}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <a
+                href={broadcastModal.mailtoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer"
+              >
+                <Mail className="w-4 h-4" />
+                <span>Buka di Gmail / Aplikasi Email (BCC)</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setBroadcastModal(null)}
+                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+              >
+                Tutup Jendela
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* POPUP MODAL: KONFIRMASI HAPUS ARTIKEL */}
+      {/* ========================================================= */}
+      {articleDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl relative border border-slate-200">
+            <button
+              onClick={() => setArticleDeleteModal(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900">
+                  Hapus Artikel Ini?
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Tindakan ini akan menghapus artikel dari database website.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+              <div className="text-xs font-black text-slate-900 line-clamp-2">
+                {articleDeleteModal.title}
+              </div>
+              <div className="flex items-center gap-2 text-[10px] text-slate-500 pt-1">
+                <span>Status:</span>
+                <span className={`font-bold ${articleDeleteModal.isCustom ? 'text-emerald-700' : 'text-slate-700'}`}>
+                  {articleDeleteModal.isCustom ? 'Artikel Diterbitkan Admin' : 'Artikel Bawaan Sistem'}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-600 leading-relaxed">
+              Setelah dihapus, artikel ini tidak akan tampil lagi di tab artikel website publik. Anda sewaktu-waktu dapat mereset artikel ke bawaan jika diperlukan.
+            </p>
+
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setArticleDeleteModal(null)}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => confirmDeleteArticle(articleDeleteModal.id)}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-98 text-white font-black text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Ya, Hapus Artikel</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

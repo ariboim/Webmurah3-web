@@ -149,6 +149,23 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange }) => {
               <span>Kontak Kami</span>
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             </button>
+
+            {/* Tab 5: Post Artikel (Admin Login) - Mudah terlihat di navtab */}
+            <button
+              onClick={() => handleSelectTab('admin')}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer relative ${
+                activeTab === 'admin'
+                  ? 'bg-slate-900 text-amber-300 shadow-md ring-2 ring-amber-400/50 scale-[1.02]'
+                  : 'bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 shadow-2xs'
+              }`}
+              title="Akses Login Admin: Tulis & Publikasikan Artikel / Blog Baru"
+            >
+              <Lock className="w-4 h-4 text-amber-600" />
+              <span>Post Artikel</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md font-black bg-amber-400 text-slate-950 uppercase tracking-wider shadow-2xs">
+                Admin
+              </span>
+            </button>
           </nav>
 
           {/* Zone 3: Actions (Produk Lainnya, Tanya AI, CTA) */}

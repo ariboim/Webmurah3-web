@@ -243,18 +243,66 @@ export function setAdminSession(loggedIn: boolean, remember: boolean = true) {
 
 // ================= ARTICLES MANAGEMENT =================
 
+const DELETED_ARTICLES_STORAGE_KEY = 'webmurah_deleted_article_ids_v2';
+const CATEGORIES_STORAGE_KEY = 'webmurah_article_categories_v2';
+
+export interface ArticleCategory {
+  id: string;
+  name: string;
+  color: string;
+  isCustom?: boolean;
+  createdAt?: number;
+}
+
+export const DEFAULT_CATEGORIES: ArticleCategory[] = [
+  { id: 'tips-bisnis', name: 'Tips Bisnis & Marketing', color: 'bg-sky-50 text-sky-800 border-sky-200' },
+  { id: 'kuliner-fnb', name: 'Kuliner & Makanan Kemasan', color: 'bg-amber-50 text-amber-800 border-amber-200' },
+  { id: 'jasa-kreatif', name: 'Jasa & Produk Kreatif', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  { id: 'fashion-retail', name: 'Fashion & Retail', color: 'bg-rose-50 text-rose-800 border-rose-200' },
+  { id: 'riset-data', name: 'Riset & Data Nasional', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+  { id: 'kisah-umkm', name: 'Kisah Sukses UMKM', color: 'bg-purple-50 text-purple-800 border-purple-200' },
+];
+
+function getDeletedArticleIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_ARTICLES_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  return new Set();
+}
+
+function saveDeletedArticleIds(ids: Set<string>) {
+  try {
+    localStorage.setItem(DELETED_ARTICLES_STORAGE_KEY, JSON.stringify(Array.from(ids)));
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 export function getAllArticles(): Article[] {
   try {
+    const deletedIds = getDeletedArticleIds();
     const raw = localStorage.getItem(ARTICLES_STORAGE_KEY);
+    let list: Article[] = [];
+
     if (raw) {
       const customArticles: Article[] = JSON.parse(raw);
       if (Array.isArray(customArticles)) {
-        // Return custom articles on top, followed by defaults (avoiding duplicate IDs)
         const customIds = new Set(customArticles.map((a) => a.id));
         const filteredDefaults = DEFAULT_ARTICLES.filter((a) => !customIds.has(a.id));
-        return [...customArticles, ...filteredDefaults];
+        list = [...customArticles, ...filteredDefaults];
       }
+    } else {
+      list = [...DEFAULT_ARTICLES];
     }
+
+    // Filter out any articles marked as deleted by admin
+    return list.filter((a) => !deletedIds.has(a.id));
   } catch (e) {
     console.error('Error loading articles from storage:', e);
   }
@@ -279,6 +327,13 @@ export function saveArticle(article: Article): boolean {
     const currentCustom = getCustomArticlesOnly();
     const existingIndex = currentCustom.findIndex((a) => a.id === article.id);
 
+    // If it was in deleted IDs list, remove from deleted
+    const deletedIds = getDeletedArticleIds();
+    if (deletedIds.has(article.id)) {
+      deletedIds.delete(article.id);
+      saveDeletedArticleIds(deletedIds);
+    }
+
     let updatedList: Article[];
     if (existingIndex >= 0) {
       updatedList = [...currentCustom];
@@ -289,7 +344,6 @@ export function saveArticle(article: Article): boolean {
 
     localStorage.setItem(ARTICLES_STORAGE_KEY, JSON.stringify(updatedList));
 
-    // Dispatch custom event to notify listeners (ArticlesPageSection, etc.)
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('articles-updated', { detail: updatedList }));
     }
@@ -302,9 +356,15 @@ export function saveArticle(article: Article): boolean {
 
 export function deleteArticle(articleId: string): boolean {
   try {
+    // 1. Remove from custom articles if present
     const currentCustom = getCustomArticlesOnly();
     const filtered = currentCustom.filter((a) => a.id !== articleId);
     localStorage.setItem(ARTICLES_STORAGE_KEY, JSON.stringify(filtered));
+
+    // 2. Mark as deleted in deleted set so default articles can also be removed
+    const deletedIds = getDeletedArticleIds();
+    deletedIds.add(articleId);
+    saveDeletedArticleIds(deletedIds);
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('articles-updated', { detail: filtered }));
@@ -319,6 +379,7 @@ export function deleteArticle(articleId: string): boolean {
 export function resetArticlesToDefault(): void {
   try {
     localStorage.removeItem(ARTICLES_STORAGE_KEY);
+    localStorage.removeItem(DELETED_ARTICLES_STORAGE_KEY);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('articles-updated', { detail: DEFAULT_ARTICLES }));
     }
@@ -326,3 +387,100 @@ export function resetArticlesToDefault(): void {
     console.error(e);
   }
 }
+
+// ================= CATEGORIES MANAGEMENT =================
+
+export function getAllCategories(): ArticleCategory[] {
+  try {
+    const raw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    if (raw) {
+      const customCats: ArticleCategory[] = JSON.parse(raw);
+      if (Array.isArray(customCats) && customCats.length > 0) {
+        // Merge custom categories with defaults (avoiding duplicate names)
+        const customNames = new Set(customCats.map((c) => c.name.toLowerCase()));
+        const uniqueDefaults = DEFAULT_CATEGORIES.filter(
+          (d) => !customNames.has(d.name.toLowerCase())
+        );
+        return [...customCats, ...uniqueDefaults];
+      }
+    }
+  } catch (e) {
+    console.error('Error reading categories:', e);
+  }
+  return DEFAULT_CATEGORIES;
+}
+
+export function saveCategory(
+  name: string,
+  colorVariant: string
+): { success: boolean; message: string; category?: ArticleCategory } {
+  const trimmedName = name.trim();
+  if (!trimmedName || trimmedName.length < 2) {
+    return { success: false, message: 'Nama kategori minimal 2 karakter.' };
+  }
+
+  try {
+    const all = getAllCategories();
+    const existing = all.find((c) => c.name.toLowerCase() === trimmedName.toLowerCase());
+    if (existing) {
+      return { success: false, message: `Kategori "${trimmedName}" sudah ada.` };
+    }
+
+    const newCat: ArticleCategory = {
+      id: 'cat-' + trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now().toString().slice(-4),
+      name: trimmedName,
+      color: colorVariant || 'bg-sky-50 text-sky-800 border-sky-200',
+      isCustom: true,
+      createdAt: Date.now(),
+    };
+
+    const currentCustomRaw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    const currentCustom: ArticleCategory[] = currentCustomRaw ? JSON.parse(currentCustomRaw) : [];
+    const updatedCustom = [newCat, ...currentCustom];
+
+    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(updatedCustom));
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('categories-updated', { detail: updatedCustom }));
+    }
+
+    return {
+      success: true,
+      message: `Kategori "${trimmedName}" berhasil disimpan dan langsung aktif!`,
+      category: newCat,
+    };
+  } catch (e) {
+    console.error('Failed to save category:', e);
+    return { success: false, message: 'Gagal menyimpan kategori ke browser.' };
+  }
+}
+
+export function deleteCategory(categoryId: string): boolean {
+  try {
+    const currentCustomRaw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    if (!currentCustomRaw) return false;
+    const currentCustom: ArticleCategory[] = JSON.parse(currentCustomRaw);
+    const filtered = currentCustom.filter((c) => c.id !== categoryId);
+    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(filtered));
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('categories-updated', { detail: filtered }));
+    }
+    return true;
+  } catch (e) {
+    console.error('Failed to delete category:', e);
+    return false;
+  }
+}
+
+export function resetCategoriesToDefault(): void {
+  try {
+    localStorage.removeItem(CATEGORIES_STORAGE_KEY);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('categories-updated', { detail: DEFAULT_CATEGORIES }));
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
