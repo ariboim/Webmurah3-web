@@ -65,6 +65,7 @@ import {
   extractYouTubeId,
 } from '../utils/mediaUtils';
 import { IndoDigitalLogo } from './IndoDigitalLogo';
+import { RichTextEditor } from './RichTextEditor';
 
 interface AdminDashboardProps {
   onNavigateToPublicArticles: () => void;
@@ -1091,18 +1092,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <button
                         type="button"
                         onClick={() => setContentMode('simple')}
-                        className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                           contentMode === 'simple'
                             ? 'bg-white text-indigo-700 shadow-xs'
                             : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        Teks Bebas / Paragraf
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Rich Text Editor (WordPress/Blogger)</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setContentMode('structured')}
-                        className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                           contentMode === 'structured'
                             ? 'bg-white text-indigo-700 shadow-xs'
                             : 'text-slate-600 hover:text-slate-900'
@@ -1115,15 +1117,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                   {contentMode === 'simple' ? (
                     <div className="space-y-2">
-                      <label className="block text-xs font-bold text-slate-700">
-                        Teks Lengkap Artikel (Gunakan Baris Baru untuk Memisahkan Paragraf)
-                      </label>
-                      <textarea
-                        rows={10}
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-bold text-slate-700">
+                          Isi Lengkap Artikel (Mendukung Bold, Italic, Underline, Judul, &amp; Tautan)
+                        </label>
+                        <span className="text-[11px] text-slate-400">
+                          Format WYSIWYG otomatis terkonversi ke HTML aman
+                        </span>
+                      </div>
+                      <RichTextEditor
                         value={formBodyText}
-                        onChange={(e) => setFormBodyText(e.target.value)}
-                        placeholder="Tuliskan isi artikel Anda secara lengkap di sini. Anda dapat menuliskan beberapa paragraf untuk mengedukasi calon pembeli mengenai pentingnya landing page, tips jualan online, dan cara mengembangkan usaha..."
-                        className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-normal"
+                        onChange={setFormBodyText}
+                        placeholder="Mulai tulis artikel Anda di sini... Anda bisa memformat teks menjadi Tebal (Bold), Miring (Italic), Garis Bawah (Underline), menambahkan Heading H2/H3, membuat daftar poin, serta menyisipkan tautan (link internal halaman atau link eksternal web)."
                       />
                     </div>
                   ) : (

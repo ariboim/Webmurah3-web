@@ -32,6 +32,7 @@ import {
   convertGoogleDriveVideoUrl,
   detectVideoSource,
 } from '../utils/mediaUtils';
+import { sanitizeArticleHtml } from '../utils/sanitizeHtml';
 
 interface ArticlesPageSectionProps {
   onNavigateToOrder?: () => void;
@@ -561,14 +562,25 @@ export const ArticlesPageSection: React.FC<ArticlesPageSectionProps> = ({
 
             {/* Editorial Content Breakdown */}
             <div className="space-y-6 text-sm text-slate-700 leading-relaxed">
-              {/* If Body Text is provided (free-form admin article) */}
+              {/* If Body Text is provided (free-form admin article or rich text) */}
               {selectedArticle.content.bodyText && (
-                <div className="space-y-3 pt-2">
-                  {selectedArticle.content.bodyText.split('\n\n').map((paragraph, idx) => (
-                    <p key={idx} className="text-slate-800 leading-relaxed text-sm sm:text-base font-normal">
-                      {paragraph}
-                    </p>
-                  ))}
+                <div className="pt-2">
+                  {selectedArticle.content.bodyText.includes('<') && selectedArticle.content.bodyText.includes('>') ? (
+                    <div
+                      className="text-slate-800 leading-relaxed text-sm sm:text-base space-y-3 prose max-w-none [&_a]:text-sky-600 [&_a]:underline [&_a]:font-semibold [&_h2]:text-xl sm:[&_h2]:text-2xl [&_h2]:font-black [&_h2]:text-slate-900 [&_h2]:mt-6 [&_h2]:mb-2 [&_h3]:text-lg sm:[&_h3]:text-xl [&_h3]:font-extrabold [&_h3]:text-slate-900 [&_h3]:mt-4 [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_blockquote]:border-l-4 [&_blockquote]:border-sky-500 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-slate-600 [&_u]:underline [&_s]:line-through"
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeArticleHtml(selectedArticle.content.bodyText),
+                      }}
+                    />
+                  ) : (
+                    <div className="space-y-3">
+                      {selectedArticle.content.bodyText.split('\n\n').map((paragraph, idx) => (
+                        <p key={idx} className="text-slate-800 leading-relaxed text-sm sm:text-base font-normal">
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
