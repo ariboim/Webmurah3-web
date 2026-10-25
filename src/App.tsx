@@ -27,25 +27,35 @@ import { ADMIN_WA_NUMBER, ADMIN_WA_DISPLAY } from './types/order';
 
 export default function App() {
   const getTabFromHash = (): PageTab => {
-    const hash = window.location.hash.toLowerCase();
-    if (hash.includes('admin') || hash.includes('login-admin') || hash.includes('dashboard')) return 'admin';
-    if (hash.includes('kemitraan') || hash.includes('mitra') || hash.includes('partnership')) return 'kemitraan';
-    if (hash.includes('artikel') || hash.includes('article') || hash.includes('blog')) return 'artikel';
-    if (hash.includes('order') || hash.includes('pesan')) return 'order';
-    if (hash.includes('kontak') || hash.includes('contact') || hash.includes('hubungi')) return 'kontak';
+    const hash = (window.location.hash || '').toLowerCase();
+    const search = (window.location.search || '').toLowerCase();
+    const path = (window.location.pathname || '').toLowerCase();
+
+    const isMatch = (keys: string[]) =>
+      keys.some((k) => hash.includes(k) || search.includes(k) || path.includes('/' + k));
+
+    if (isMatch(['admin', 'login-admin', 'dashboard'])) return 'admin';
+    if (isMatch(['kemitraan', 'mitra', 'partnership'])) return 'kemitraan';
+    if (isMatch(['artikel', 'article', 'blog'])) return 'artikel';
+    if (isMatch(['order', 'pesan', 'formulir'])) return 'order';
+    if (isMatch(['kontak', 'contact', 'hubungi'])) return 'kontak';
     return 'home';
   };
 
   const [activeTab, setActiveTab] = useState<PageTab>(getTabFromHash);
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
 
-  // Sync with browser hash (back/forward button & direct URL access)
+  // Sync with browser hash / history (back/forward button & direct URL access)
   useEffect(() => {
-    const handleHashChange = () => {
+    const handleUrlChange = () => {
       setActiveTab(getTabFromHash());
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('hashchange', handleUrlChange);
+    window.addEventListener('popstate', handleUrlChange);
+    return () => {
+      window.removeEventListener('hashchange', handleUrlChange);
+      window.removeEventListener('popstate', handleUrlChange);
+    };
   }, []);
 
   // Show promo pop-up overlay on first visit

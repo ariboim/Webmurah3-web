@@ -31,6 +31,9 @@ import {
   TrendingUp,
   Briefcase,
   HelpCircle,
+  Share2,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { ADMIN_WA_NUMBER } from '../types/order';
 import html2canvas from 'html2canvas-pro';
@@ -104,7 +107,35 @@ export const KemitraanPageSection: React.FC<{
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [pdfSuccessNotice, setPdfSuccessNotice] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<string[]>([]);
+  const [copiedLink, setCopiedLink] = useState(false);
   const agreementContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const getDirectLink = () => {
+    if (typeof window !== 'undefined' && window.location.origin) {
+      return `${window.location.origin}/#/kemitraan`;
+    }
+    return 'https://webmurah.biz.id/#/kemitraan';
+  };
+
+  const handleCopyLink = () => {
+    const link = getDirectLink();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(() => {
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2500);
+      }).catch(() => {
+        prompt('Salin link kemitraan berikut:', link);
+      });
+    } else {
+      prompt('Salin link kemitraan berikut:', link);
+    }
+  };
+
+  const handleShareWaLink = () => {
+    const link = getDirectLink();
+    const text = `Halo! Berikut adalah link pendaftaran dan penandatanganan resmi Surat Perjanjian Kemitraan Mandiri (Non-PKWT) PT INOVASI TEKNOLOGI DIGITAL INDONESIA:\n\n${link}\n\nSilakan buka tautan di atas untuk melengkapi formulir dan melakukan tanda tangan digital secara online.`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
 
   // Save to localStorage when formData changes
   useEffect(() => {
@@ -458,6 +489,45 @@ Saya siap menjalankan komitmen WFH dan target evaluasi Rp 10.000.000/bulan. Moho
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-medium">
             Sistem onboarding dan tanda tangan surat perjanjian kemitraan mandiri secara online. Bebas bekerja dari mana saja (Full WFH) dengan pembagian fee 60% : 40% dan peluang pengangkatan karyawan tetap (PKWTT).
           </p>
+
+          {/* Direct Link Share & Copy Bar */}
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2 max-w-xl mx-auto">
+            <div className="w-full sm:flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 flex items-center justify-between gap-2 shadow-2xs">
+              <div className="flex items-center gap-2 overflow-hidden text-left min-w-0">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+                <span className="text-xs font-mono font-bold text-slate-700 truncate select-all">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/#/kemitraan` : 'https://webmurah.biz.id/#/kemitraan'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-bold transition-all border border-sky-200 cursor-pointer"
+                title="Salin Direct Link"
+              >
+                {copiedLink ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-emerald-700">Tersalin!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-sky-700" />
+                    <span>Salin Link</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleShareWaLink}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Bagikan WhatsApp</span>
+            </button>
+          </div>
         </div>
 
         {/* 4 Feature Highlights Grid */}
