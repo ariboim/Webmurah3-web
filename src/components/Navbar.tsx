@@ -12,11 +12,12 @@ import {
   Flame,
   BookOpen,
   Lock,
+  Briefcase,
 } from 'lucide-react';
 import { ADMIN_WA_NUMBER, ADMIN_WA_DISPLAY } from '../types/order';
 import { IndoDigitalLogo } from './IndoDigitalLogo';
 
-export type PageTab = 'home' | 'order' | 'artikel' | 'kontak' | 'admin';
+export type PageTab = 'home' | 'order' | 'artikel' | 'kemitraan' | 'kontak' | 'admin';
 
 interface NavbarProps {
   activeTab: PageTab;
@@ -136,7 +137,23 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange }) => {
               </span>
             </button>
 
-            {/* Tab 4: Kontak Kami */}
+            {/* Tab 4: Kemitraan (Non-PKWT / WFH) */}
+            <button
+              onClick={() => handleSelectTab('kemitraan')}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+                activeTab === 'kemitraan'
+                  ? 'bg-[#1D3582] text-white shadow-md shadow-[#1D3582]/25 scale-[1.02]'
+                  : 'text-slate-700 hover:text-[#1D3582] hover:bg-white'
+              }`}
+            >
+              <Briefcase className="w-4 h-4 text-indigo-500" />
+              <span>Kemitraan</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-black bg-indigo-100 text-indigo-800 border border-indigo-200">
+                Non-PKWT
+              </span>
+            </button>
+
+            {/* Tab 5: Kontak Kami */}
             <button
               onClick={() => handleSelectTab('kontak')}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
@@ -288,6 +305,23 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange }) => {
               </button>
 
               <button
+                onClick={() => handleSelectTab('kemitraan')}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-black transition-all ${
+                  activeTab === 'kemitraan'
+                    ? 'bg-[#1D3582] text-white shadow-md'
+                    : 'bg-slate-50 text-slate-800 border border-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Briefcase className="w-4 h-4 text-indigo-600" />
+                  <span>4. Kemitraan Mandiri (Non-PKWT)</span>
+                </div>
+                <span className="text-[10px] bg-indigo-100 text-indigo-800 font-black px-2 py-0.5 rounded-full border border-indigo-200">
+                  Fee 60% WFH
+                </span>
+              </button>
+
+              <button
                 onClick={() => handleSelectTab('kontak')}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-black transition-all ${
                   activeTab === 'kontak'
@@ -297,7 +331,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange }) => {
               >
                 <div className="flex items-center gap-2.5">
                   <PhoneCall className="w-4 h-4 text-emerald-600" />
-                  <span>4. Kontak Kami (WhatsApp & Studio)</span>
+                  <span>5. Kontak Kami (WhatsApp & Studio)</span>
                 </div>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </button>
@@ -312,7 +346,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange }) => {
               >
                 <div className="flex items-center gap-2.5">
                   <Lock className="w-4 h-4 text-amber-600" />
-                  <span>5. Login Admin (Input Blog/Artikel)</span>
+                  <span>6. Login Admin (Input Blog/Artikel)</span>
                 </div>
                 <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-extrabold">
                   Khusus Admin

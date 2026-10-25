@@ -13,6 +13,7 @@ import { OrderFormSection } from './components/OrderFormSection';
 import { OrderPageSection } from './components/OrderPageSection';
 import { ContactPageSection } from './components/ContactPageSection';
 import { ArticlesPageSection } from './components/ArticlesPageSection';
+import { KemitraanPageSection } from './components/KemitraanPageSection';
 import { AdminDashboard } from './components/AdminDashboard';
 import { TestimonialsSection } from './components/TestimonialsSection';
 import { FaqSection } from './components/FaqSection';
@@ -21,13 +22,14 @@ import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { FloatingShare } from './components/FloatingShare';
 import { BackToTop } from './components/BackToTop';
 import { PromoModal } from './components/PromoModal';
-import { Sparkles, ArrowRight, MessageCircle, FileEdit, PhoneCall, ShieldCheck, Tag, Lock } from 'lucide-react';
+import { Sparkles, ArrowRight, MessageCircle, FileEdit, PhoneCall, ShieldCheck, Tag, Lock, Briefcase } from 'lucide-react';
 import { ADMIN_WA_NUMBER, ADMIN_WA_DISPLAY } from './types/order';
 
 export default function App() {
   const getTabFromHash = (): PageTab => {
     const hash = window.location.hash.toLowerCase();
     if (hash.includes('admin') || hash.includes('login-admin') || hash.includes('dashboard')) return 'admin';
+    if (hash.includes('kemitraan') || hash.includes('mitra') || hash.includes('partnership')) return 'kemitraan';
     if (hash.includes('artikel') || hash.includes('article') || hash.includes('blog')) return 'artikel';
     if (hash.includes('order') || hash.includes('pesan')) return 'order';
     if (hash.includes('kontak') || hash.includes('contact') || hash.includes('hubungi')) return 'kontak';
@@ -219,7 +221,17 @@ export default function App() {
           </div>
         )}
 
-        {/* ================= PAGE 4: KONTAK KAMI (HUBUNGI KAMI) ================= */}
+        {/* ================= PAGE 4: KEMITRAAN MANDIRI (NON-PKWT) ================= */}
+        {activeTab === 'kemitraan' && (
+          <div className="animate-fade-in">
+            <KemitraanPageSection
+              onNavigateToOrder={() => handleTabChange('order')}
+              onNavigateToContact={() => handleTabChange('kontak')}
+            />
+          </div>
+        )}
+
+        {/* ================= PAGE 5: KONTAK KAMI (HUBUNGI KAMI) ================= */}
         {activeTab === 'kontak' && (
           <div className="animate-fade-in">
             <ContactPageSection
