@@ -36,6 +36,8 @@ import {
   X,
   Tag,
   Search,
+  Zap,
+  Play,
 } from 'lucide-react';
 import {
   Article,
@@ -72,7 +74,7 @@ interface AdminDashboardProps {
   onNavigateToHome: () => void;
 }
 
-type AdminTab = 'create' | 'list' | 'categories' | 'newsletter' | 'settings';
+type AdminTab = 'create' | 'list' | 'categories' | 'autopost' | 'newsletter' | 'settings';
 
 export const CATEGORY_COLOR_PRESETS = [
   { id: 'sky', label: 'Biru (Sky)', color: 'bg-sky-50 text-sky-800 border-sky-200', dot: 'bg-sky-500' },
@@ -178,6 +180,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [smtpNotice, setSmtpNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isSavingSmtp, setIsSavingSmtp] = useState<boolean>(false);
 
+  // Auto-Scheduler State (2 Articles / Day)
+  const [schedulerStatus, setSchedulerStatus] = useState<any>(null);
+  const [isTriggeringAutoPost, setIsTriggeringAutoPost] = useState(false);
+  const [autoPostNotice, setAutoPostNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const fetchSubscribers = () => {
     fetch('/api/newsletter/subscribers')
       .then((r) => r.json())
@@ -196,6 +203,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       .catch((err) => console.error('Fetch SMTP error:', err));
   };
 
+  const fetchSchedulerStatus = () => {
+    fetch('/api/articles/auto-scheduler')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          setSchedulerStatus(data);
+        }
+      })
+      .catch((err) => console.error('Fetch scheduler error:', err));
+  };
+
+  const handleTriggerAutoPostNow = () => {
+    setIsTriggeringAutoPost(true);
+    setAutoPostNotice(null);
+    fetch('/api/articles/auto-scheduler/trigger-now', {
+      method: 'POST',
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setIsTriggeringAutoPost(false);
+        if (data.success) {
+          setAutoPostNotice({ type: 'success', text: data.message });
+          fetchSchedulerStatus();
+          refreshArticles();
+        } else {
+          setAutoPostNotice({ type: 'error', text: data.message || 'Gagal auto-post artikel.' });
+        }
+      })
+      .catch((err) => {
+        setIsTriggeringAutoPost(false);
+        setAutoPostNotice({ type: 'error', text: err.message || 'Error auto-post.' });
+      });
+  };
+
+  const handleToggleScheduler = (enabled: boolean) => {
+    fetch('/api/articles/auto-scheduler/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    })
+      .then((r) => r.json())
+      .then(() => fetchSchedulerStatus())
+      .catch((err) => console.error(err));
+  };
+
   // Load articles & categories on mount & sync admin username & newsletter data
   useEffect(() => {
     refreshArticles();
@@ -205,6 +257,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (isAuthenticated) {
       fetchSubscribers();
       fetchSmtpConfig();
+      fetchSchedulerStatus();
     }
 
     const onCatsUpdated = () => setCategories(getAllCategories());
@@ -841,6 +894,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             >
               <Tag className="w-4 h-4 text-emerald-500" />
               <span>Kelola Kategori ({categories.length})</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab('autopost');
+                setFormSuccessMessage('');
+                fetchSchedulerStatus();
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'autopost'
+                  ? 'bg-sky-600 text-white shadow-xs'
+                  : 'text-slate-700 hover:text-sky-700 hover:bg-white'
+              }`}
+            >
+              <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
+              <span>Auto-Post 2x/Hari</span>
+              {schedulerStatus?.config?.enabled && (
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              )}
             </button>
 
             <button
@@ -1860,6 +1932,191 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* TAB: JADWAL & AUTO-POST ARTIKEL (MINIMAL 2 ARTIKEL / HARI) */}
+        {/* ========================================================= */}
+        {activeTab === 'autopost' && (
+          <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
+            {/* Top Cards: Status & Schedule Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status Otomatisasi</span>
+                  <div className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${schedulerStatus?.config?.enabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                    <span>{schedulerStatus?.config?.enabled ? 'Aktif Berjalan' : 'Dinonaktifkan'}</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleToggleScheduler(!schedulerStatus?.config?.enabled)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    schedulerStatus?.config?.enabled
+                      ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                  }`}
+                >
+                  {schedulerStatus?.config?.enabled ? 'Matikan' : 'Aktifkan'}
+                </button>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                  <Clock className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Frekuensi Publikasi</div>
+                  <div className="text-sm font-black text-slate-900">2 Artikel / Hari</div>
+                  <div className="text-[11px] text-slate-500">Slot: 08:00 &amp; 17:00 WIB</div>
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                  <Calendar className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Jadwal Slot Berikutnya</div>
+                  <div className="text-sm font-black text-sky-700 truncate max-w-[180px]">
+                    {schedulerStatus?.config?.nextSlotName || '08:00 WIB (Besok)'}
+                  </div>
+                  <div className="text-[11px] text-slate-500">Antrean: {schedulerStatus?.pendingQueueCount || 0} artikel</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Notification Banner */}
+            {autoPostNotice && (
+              <div
+                className={`p-4 rounded-2xl text-xs flex items-center gap-2 font-bold animate-fade-in ${
+                  autoPostNotice.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-rose-50 text-rose-800 border border-rose-200'
+                }`}
+              >
+                {autoPostNotice.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                )}
+                <span>{autoPostNotice.text}</span>
+              </div>
+            )}
+
+            {/* Main Action Panel */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                    <Zap className="w-6 h-6 fill-amber-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900">
+                      Sistem Otomatisasi Post Artikel (Minimal 2x Sehari)
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Server secara otomatis menerbitkan artikel dari antrean pada slot jam 08:00 WIB dan 17:00 WIB setiap hari, serta otomatis mengirimkan push email ke subscriber newsletter.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isTriggeringAutoPost}
+                  onClick={handleTriggerAutoPostNow}
+                  className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-yellow-300 active:scale-98 text-slate-950 text-xs font-black flex items-center gap-2 cursor-pointer shadow-md transition-all shrink-0"
+                >
+                  <Play className="w-3.5 h-3.5 fill-slate-950" />
+                  <span>{isTriggeringAutoPost ? 'Mempublikasikan...' : 'Jalankan Auto-Post Sekarang'}</span>
+                </button>
+              </div>
+
+              {/* Antrean Artikel Siap Terbit */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-amber-600" />
+                    <span>Antrean Artikel Terjadwal ({schedulerStatus?.queue?.filter((a: any) => a.status === 'queued').length || 0})</span>
+                  </h3>
+                  <span className="text-[11px] text-slate-500">Siap diposting secara berkala</span>
+                </div>
+
+                <div className="space-y-3">
+                  {schedulerStatus?.queue
+                    ?.filter((a: any) => a.status === 'queued')
+                    .map((queued: any, idx: number) => (
+                      <div
+                        key={queued.id}
+                        className="p-4 sm:p-5 rounded-2xl border border-slate-200 bg-slate-50/70 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+                      >
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 font-black text-xs flex items-center justify-center shrink-0">
+                            #{idx + 1}
+                          </div>
+                          <div className="space-y-1 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md border ${queued.categoryColor}`}>
+                                {queued.category}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-500">
+                                Target Keyword: <code className="text-sky-700 bg-sky-50 px-1 py-0.5 rounded">{queued.targetKeyword}</code>
+                              </span>
+                            </div>
+                            <h4 className="text-sm font-black text-slate-900 leading-snug">
+                              {queued.title}
+                            </h4>
+                            <p className="text-xs text-slate-500 line-clamp-1">
+                              {queued.summary}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                          <span className="text-[11px] font-semibold text-amber-700 bg-amber-100/70 px-2.5 py-1 rounded-lg">
+                            Slot Antrean #{idx + 1}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Riwayat Artikel Auto-Post yang Telah Terbit */}
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Riwayat Publikasi Otomatis ({schedulerStatus?.published?.length || 0})</span>
+                  </h3>
+                  <button
+                    onClick={onNavigateToPublicArticles}
+                    className="text-xs text-sky-600 hover:text-sky-800 font-bold underline cursor-pointer"
+                  >
+                    Lihat di Tab Artikel Publik &rarr;
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {schedulerStatus?.published?.map((pub: any) => (
+                    <div
+                      key={pub.id}
+                      className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="font-bold text-slate-900 truncate">{pub.title}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 shrink-0 font-medium">
+                        {pub.publishedAt ? new Date(pub.publishedAt).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Terbit'}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

@@ -32,9 +32,168 @@ export interface Article {
   author?: string;
   isCustom?: boolean;
   createdAt?: number;
+  metaDescription?: string;
+  targetKeyword?: string;
+  secondaryKeywords?: string[];
 }
 
 export const DEFAULT_ARTICLES: Article[] = [
+  {
+    id: 'aerostreet-klaten-sepatu-lokal',
+    category: 'Fashion & Retail',
+    categoryColor: 'bg-rose-50 text-rose-800 border-rose-200',
+    title: 'Rahasia Aerostreet Merajai Pasar Sepatu Lokal',
+    subtitle: 'Transformasi Pabrik Sepatu Klaten Bangkit Menjual Jutaan Pasang Lewat Live Shopping',
+    readTime: '5 Menit Baca',
+    date: '2026',
+    sourceName: 'Studi Kasus Digitalisasi UMKM & E-Commerce',
+    sourceUrl: 'https://kompas.id',
+    keyStat: '2.5 Juta+',
+    keyStatLabel: 'Pasang Sepatu / Tahun',
+    metaDescription: 'Pelajari bagaimana Aerostreet bangkit dari krisis dan menjual jutaan pasang sepatu berkat live shopping. Simak strategi digitalnya di sini!',
+    targetKeyword: 'digitalisasi UMKM sepatu',
+    secondaryKeywords: ['live shopping e-commerce', 'strategi Aerostreet', 'pemasaran media sosial'],
+    summary:
+      'Dari pabrik sepatu konvensional di Klaten yang hampir gulung tikar akibat produk impor, Adhitya Caesarico mentransformasikan Aerostreet menjadi raksasa sepatu lokal lewat strategi live commerce TikTok Shop dan Shopee Live, menghasilkan jutaan pesanan per tahun.',
+    imageUrl: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1200&q=80',
+    author: 'Adhitya Caesarico & Riset E-Commerce',
+    isCustom: false,
+    createdAt: 1713000000000,
+    content: {
+      bodyText: `<h2>Perjalanan Awal: Ancaman Gulung Tikar Pabrik Sepatu Klaten</h2>
+<p>Sebelum dikenal luas oleh generasi muda di seluruh pelosok Nusantara, <strong>Aerostreet</strong> yang berbasis di Klaten, Jawa Tengah, beroperasi sebagai pabrik sepatu konvensional. Dipimpin oleh <strong>Adhitya Caesarico</strong>, bisnis ini mulanya sangat bergantung pada jaringan distribusi toko fisik tradisional (*offline*).</p>
+<p>Namun, perubahan pola belanja masyarakat dan serbuan produk sepatu impor murah membuat bisnisnya sempat berada di ujung tanduk. Penjualan toko fisik merosot tajam, stok sepatu menumpuk di gudang, dan ancaman pemutusan hubungan kerja membayangi ratusan perajin lokal di daerah Klaten.</p>
+
+<h2>Langkah Transformasi Digital: Menunggangi Gelombang Live Shopping</h2>
+<p>Menyadari bahwa model bisnis lama tidak lagi relevan, Adhitya mengambil keputusan berani untuk merombak total strategi pemasaran dengan mengadopsi <strong>digitalisasi UMKM sepatu</strong> secara menyeluruh melalui ekosistem <em>social commerce</em> dan <em>live shopping</em> di TikTok Shop dan Shopee Live.</p>
+
+<h3>1. Transparansi Kualitas Melalui Siaran Langsung (Live Streaming)</h3>
+<p>Aerostreet tidak hanya sekadar memajang foto produk di katalog digital. Tim siaran langsung mendemonstrasikan kekuatan jahitan, fleksibilitas sol karet, dan kenyamanan sepatu secara nyata di depan kamera. Interaksi dua arah secara <em>real-time</em> menjawab keraguan calon pembeli yang selama ini ragu membeli sepatu tanpa mencobanya terlebih dahulu.</p>
+
+<h3>2. Strategi Drop Culture dan Flash Sale yang Memicu FOMO</h3>
+<p>Mengadopsi taktik rilis terbatas (*drop culture*), Aerostreet meluncurkan varian sepatu baru pada jam-jam tayang siaran langsung tertentu dengan kuota eksklusif. Pendekatan ini memicu antusiasme tinggi (*Fear of Missing Out*) di kalangan konsumen, di mana ribuan pasang sepatu kerap ludes hanya dalam hitungan menit.</p>
+
+<h3>3. Kolaborasi Brand (Co-Branding) yang Viral</h3>
+<p>Aerostreet menggandeng nama-nama besar dan ikon budaya populer Indonesia, mulai dari Indomie, Dagadu, hingga musisi lokal. Setiap kolaborasi dipromosikan secara masif di media sosial sehingga memicu percakapan organik (*viral marketing*) tanpa beban biaya iklan konvensional yang mahal.</p>
+
+<h2>Hasil dan Pencapaian: Melipatgandakan Omzet dan Lapangan Kerja</h2>
+<p>Transformasi digital ini membuahkan hasil fantastis. Aerostreet berhasil bertransformasi dari produsen lokal yang nyaris kolaps menjadi salah satu merek alas kaki terlaris di Indonesia dengan angka penjualan menembus <strong>lebih dari 2,5 juta pasang sepatu per tahun</strong>.</p>
+<p>Pabrik di Klaten kini mempekerjakan ribuan karyawan dan perajin lokal, sekaligus membuktikan bahwa produk lokal dengan harga terjangkau mampu bersaing ketat dengan merek internasional di ranah daring.</p>
+
+<h2>Pelajaran Berharga untuk Pelaku UMKM</h2>
+<ul>
+  <li><strong>Buktikan Kualitas Lewat Konten Video Interaktif:</strong> Konsumen era digital membutuhkan bukti visual nyata. Manfaatkan fitur siaran langsung (*live streaming*) untuk mendemonstrasikan keunggulan produk Anda secara transparan.</li>
+  <li><strong>Ciptakan Momen Penjualan Terjadwal:</strong> Jangan biarkan etalase digital Anda pasif. Bangun jadwal promosi rutin yang dinantikan oleh pengikut setia Anda.</li>
+  <li><strong>Miliki Aset Digital Mandiri:</strong> Sinergikan media sosial dan marketplace dengan aset web mandiri agar Anda memiliki kendali penuh atas identitas brand dan margin laba.</li>
+</ul>
+
+<p><em>Kisah Aerostreet menegaskan bahwa digitalisasi bukan sekadar opsi tambahan, melainkan penyelamat sekaligus mesin akselerasi bisnis bagi UMKM yang berani keluar dari zona nyaman.</em></p>`,
+    },
+  },
+  {
+    id: 'bittersweet-by-najla-kuliner-dessert',
+    category: 'Kuliner & Makanan Kemasan',
+    categoryColor: 'bg-amber-50 text-amber-800 border-amber-200',
+    title: 'Kisah Sukses Bittersweet by Najla Dominasi Pasar',
+    subtitle: 'Inovasi Dessert Box Garasi Rumah Menjadi Bisnis Beromzet Miliaran dengan 1.000 Karyawan',
+    readTime: '5 Menit Baca',
+    date: '2026',
+    sourceName: 'Warta Ekonomi & Riset Kuliner Digital',
+    sourceUrl: 'https://wartaekonomi.co.id',
+    keyStat: '1.000+',
+    keyStatLabel: 'Karyawan & Puluhan Gerai',
+    metaDescription: 'Dari garasi rumah hingga seribu karyawan! Temukan rahasia Bittersweet by Najla melejitkan omzet lewat live commerce dan e-commerce di sini.',
+    targetKeyword: 'sukses bisnis dessert box',
+    secondaryKeywords: ['e-commerce UMKM kuliner', 'live commerce makanan', 'pemasaran digital omnichannel'],
+    summary:
+      'Dimulai dari industri rumahan di garasi, Najla Bisyir mengatasi tantangan batas kedaluwarsa cake dengan logistik pendingin kilat dan pemasaran live shopping interaktif, mengantarkan Bittersweet by Najla mempekerjakan seribu karyawan dan menjual puluhan ribu box per hari.',
+    imageUrl: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=1200&q=80',
+    author: 'Najla Bisyir & Liputan UMKM Kuliner',
+    isCustom: false,
+    createdAt: 1713100000000,
+    content: {
+      bodyText: `<h2>Awal Mula: Tantangan Bisnis Makanan Basah dari Dapur Rumah</h2>
+<p>Pada tahun 2016, <strong>Najla Bisyir</strong> memulai usaha pembuatan kue manis (*dessert*) dari garasi rumahnya di Jakarta dengan nama <strong>Bittersweet by Najla</strong>. Sebagai pelopor konsep <em>dessert box</em> di Indonesia, tantangan terbesar yang dihadapi usaha kuliner ini adalah masa simpan produk (*shelf-life*) yang relatif singkat.</p>
+<p>Kue basah berlapis krim cokelat rentan rusak jika terpapar suhu ruang dalam waktu lama. Akibatnya, jangkauan penjualan awalnya hanya terbatas pada pelanggan di sekitar area domisili yang memesan secara manual melalui pesan WhatsApp.</p>
+
+<h2>Strategi Digitalisasi: Omnichannel & Logistik Terintegrasi</h2>
+<p>Najla menyadari bahwa untuk mencapai <strong>sukses bisnis dessert box</strong> dalam skala nasional, ia harus memadukan kekuatan pemasaran digital dengan solusi logistik modern.</p>
+
+<h3>1. Integrasi Multi-Platform E-Commerce & Logistik Rantai Dingin</h3>
+<p>Bittersweet by Najla bermigrasi dari sistem pencatatan pesanan manual ke platform e-commerce terkemuka (seperti Tokopedia dan Shopee) serta menggandeng ekspedisi kurir kilat khusus makanan dingin (*cold-chain logistics* seperti Paxel). Langkah ini memungkinkan paket dessert terkirim dalam kondisi beku sempurna ke puluhan kota di Pulau Jawa, Bali, hingga Sumatra.</p>
+
+<h3>2. Live Shopping Interaktif & Food Seduction Content</h3>
+<p>Najla memanfaatkan fitur siaran langsung (*live streaming*) untuk berinteraksi langsung dengan para penikmat dessert. Sesi *live* menyajikan potongan dessert box lumer (*food porn visual*) yang memancing air liur penonton, disertai penawaran kupon diskon kilat dan gratis ongkos kirim yang mendorong transaksi impulsif seketika.</p>
+
+<h3>3. Membangun Bukti Sosial (Social Proof) & Endorsement Massif</h3>
+<p>Setiap ulasan positif dari konsumen diviralkan kembali melalui Instagram Stories dan TikTok. Kehadiran ulasan otentik dari ratusan selebritas dan ribuan pelanggan biasa menciptakan efek bola salju yang mengukuhkan posisi brand sebagai tolak ukur dessert box di Indonesia.</p>
+
+<h2>Hasil Konkret: Ribuan Pesanan Harian dan 1.000+ Lapangan Kerja</h2>
+<p>Kombinasi konten visual yang menggugah selera dan ekosistem digital yang kokoh membuahkan hasil luar biasa. Bisnis yang berawal dari garasi kini mempekerjakan <strong>lebih dari 1.000 karyawan</strong>, mendirikan pabrik produksi higienis, dan membuka puluhan outlet fisik di berbagai kota besar.</p>
+<p>Pada festival kampanye belanja online (seperti 9.9 dan 12.12), Bittersweet by Najla rutin mencatatkan rekor penjualan puluhan ribu box hanya dalam kurun waktu beberapa jam sesi live shopping berlangsung.</p>
+
+<h2>Pelajaran Aplikatif untuk Pengusaha Kuliner</h2>
+<ul>
+  <li><strong>Selesaikan Kendala Pengiriman dengan Kemitraan Digital:</strong> Jangan biarkan kendala fisik membatasi pasar Anda. Manfaatkan jaringan ekspedisi logistik kilat dan kurir instan untuk memperluas radius pemasaran.</li>
+  <li><strong>Eksploitasi Visual Produk:</strong> Dalam bisnis makanan, daya pikat visual adalah 80% pemicu pembelian. Investasikan waktu untuk memproduksi foto dan video berkualitas tinggi yang menggugah selera.</li>
+  <li><strong>Miliki Halaman Penawaran Khusus:</strong> Menyediakan halaman katalog digital mandiri mempermudah pelanggan memilih varian rasa dan melakukan pembayaran tanpa harus menunggu balasan admin chat yang lambat.</li>
+</ul>
+
+<p><em>Keberhasilan Bittersweet by Najla membuktikan bahwa komitmen menjaga kualitas rasa yang diimbangi keberanian memanfaatkan teknologi mampu mengangkat usaha rumahan menjadi industri berskala nasional.</em></p>`,
+    },
+  },
+  {
+    id: 'pala-nusantara-jam-kayu-ekspor',
+    category: 'Jasa & Produk Kreatif',
+    categoryColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    title: 'Pala Nusantara: Jam Kayu Lokal Tembus Ekspor Dunia',
+    subtitle: 'Strategi Digital Storytelling & Website Mandiri Membawa Kriya Bandung ke Pasar Global',
+    readTime: '5 Menit Baca',
+    date: '2026',
+    sourceName: 'Studi Kasus Kriya Nusantara & Ekspor Digital',
+    sourceUrl: 'https://kompas.com',
+    keyStat: '15+ Negara',
+    keyStatLabel: 'Tujuan Ekspor Mancanegara',
+    metaDescription: 'Kisah inspiratif Pala Nusantara menembus pasar ekspor dunia berkat digital storytelling dan website resmi. Baca strategi suksesnya di sini!',
+    targetKeyword: 'ekspor kriya jam tangan kayu',
+    secondaryKeywords: ['digital storytelling branding', 'website UMKM global', 'kerajinan nusantara'],
+    summary:
+      'Berangkat dari keterbatasan pasar kriya fisik di Bandung, Ilham Pinastiko membawa jam tangan kayu Pala Nusantara menembus pasar ekspor di 15 negara melalui kekuatan digital storytelling dan website profesional mandiri berstandar internasional.',
+    imageUrl: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80',
+    author: 'Ilham Pinastiko & Studi Kasus Ekspor',
+    isCustom: false,
+    createdAt: 1713200000000,
+    content: {
+      bodyText: `<h2>Tantangan Produk Kriya: Nilai Seni Tinggi di Pasar Fisik yang Terbatas</h2>
+<p>Banyak perajin kriya di Indonesia menghadapi kendala yang sama: produk mereka memiliki nilai estetika dan filosofi yang mendalam, namun sulit mendapatkan harga jual yang layak di pasar lokal konvensional. Kondisi ini dialami oleh <strong>Ilham Pinastiko</strong> saat mendirikan <strong>Pala Nusantara</strong> di Bandung, Jawa Barat.</p>
+<p>Memproduksi jam tangan dan aksesori berbahan dasar kayu lokal (seperti kayu sonokeling dan maple) serta kulit nabati, produk Pala Nusantara bukan sekadar penunjuk waktu, melainkan karya seni. Namun saat hanya mengandalkan pameran fisik (*bazaar*), calon pembeli kerap menawar murah karena menganggapnya sekadar kerajinan tangan biasa.</p>
+
+<h2>Strategi Transformasi Digital: Menjual Nilai Melalui Narasi Budaya</h2>
+<p>Menolak untuk menurunkan harga dan menurunkan kualitas, Ilham memutar haluan strategi bisnis dengan menargetkan pasar penikmat produk desain bernilai seni tinggi, baik di dalam negeri maupun mancanegara.</p>
+
+<h3>1. Pendekatan Digital Storytelling yang Otentik</h3>
+<p>Setiap koleksi jam tangan diberi nama dan filosofi cerita rakyat Nusantara (seperti seri Toraja, Rinjani, dan Samudra). Di Instagram dan media digital, Pala Nusantara tidak menjual "fitur jam tangan", melainkan narasi identitas budaya dan gaya hidup berkelanjutan (*eco-friendly luxury*). Pendekatan ini berhasil menarik minat konsumen berdaya beli tinggi (*affluent market*).</p>
+
+<h3>2. Membangun Website Resmi Mandiri Berstandar Global</h3>
+<p>Alih-alih hanya bergantung pada marketplace domestik, Pala Nusantara membangun situs web mandiri dengan bahasa ganda (Inggris dan Indonesia), tampilan visual minimalis modern, serta integrasi sistem pembayaran internasional (kartu kredit dan payment gateway global). Website ini menjadi etalase profesional yang memverifikasi kredibilitas bisnis di mata pembeli luar negeri.</p>
+
+<h3>3. Iklan Tertarget (Targeted Digital Ads) ke Pecinta Desain</h3>
+<p>Melalui Meta Ads (Facebook & Instagram), Pala Nusantara menyasar target audiens spesifik: pecinta produk ramah lingkungan, arsitek, desainer, dan kolektor jam tangan unik di kota-kota besar Indonesia serta negara tetangga seperti Singapura, Malaysia, dan Jepang.</p>
+
+<h2>Pencapaian: Menembus Pasar Ekspor di Lebih dari 15 Negara</h2>
+<p>Strategi digitalisasi ini mengantarkan Pala Nusantara melompati batas geografis. Saat ini, produk jam tangan kayu asli Bandung ini telah berhasil diekspor secara rutin ke <strong>lebih dari 15 negara</strong>, meliputi Jepang, Korea Selatan, Australia, Jerman, hingga Amerika Serikat.</p>
+<p>Selain mencatatkan pertumbuhan omzet hingga ratusan persen, kesuksesan ini berdampak langsung pada kesejahteraan puluhan perajin kayu dan kulit lokal di Jawa Barat yang mendapatkan penghasilan di atas rata-rata berkat tingginya nilai tambah produk kriya di pasar dunia.</p>
+
+<h2>Pelajaran Kunci bagi Pelaku Usaha Kriya dan Kerajinan</h2>
+<ul>
+  <li><strong>Jual Makna, Bukan Sekadar Benda:</strong> Konsumen modern bersedia membayar mahal untuk cerita, filosofi, dan orisinalitas. Gunakan media digital untuk menceritakan proses pembuatan (*behind the scenes*) dan filosofi di balik produk Anda.</li>
+  <li><strong>Website Mandiri adalah Paspor Ekspor:</strong> Calon pembeli luar negeri menuntut profesionalisme. Memiliki website dengan domain resmi sendiri adalah syarat mutlak untuk membangun rasa percaya (*trust*) pembeli internasional.</li>
+  <li><strong>Bidik Segmen yang Tepat dengan Pemasaran Digital:</strong> Jika produk Anda bernilai premium, jangan bertarung harga di pasar umum. Gunakan alat analitik digital untuk menyasar audiens yang memang menghargai kualitas produk Anda.</li>
+</ul>
+
+<p><em>Kisah Pala Nusantara membuktikan bahwa kriya lokal Indonesia memiliki daya saing luar biasa di panggung global. Kuncinya terletak pada pengemasan narasi yang elegan dan pemanfaatan infrastruktur digital mandiri.</em></p>`,
+    },
+  },
   {
     id: 'metamorf-perawatan-sepatu',
     category: 'Jasa & Produk Kreatif',

@@ -6,6 +6,16 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
 import nodemailer from 'nodemailer';
+import {
+  getSchedulerConfig,
+  saveSchedulerConfig,
+  getArticleQueue,
+  saveArticleQueue,
+  getPublishedArticles,
+  executeAutoPublishNext,
+  calculateNextScheduledSlot,
+  QueuedArticle,
+} from './server_article_scheduler';
 
 dotenv.config();
 
@@ -590,6 +600,151 @@ Website: https://webmurah.biz.id
       res.status(500).json({ error: err.message || 'Gagal melakukan broadcast newsletter.' });
     }
   });
+
+  // ================= ARTICLE AUTO-SCHEDULER API (2 ARTIKEL / HARI) =================
+  app.get('/api/articles/auto-scheduler', (_req: Request, res: Response) => {
+    try {
+      const config = getSchedulerConfig();
+      const queue = getArticleQueue();
+      const published = getPublishedArticles();
+      const nextSlotInfo = calculateNextScheduledSlot(config.dailySlots);
+
+      res.json({
+        success: true,
+        config: {
+          ...config,
+          nextSlotName: nextSlotInfo.slotName,
+        },
+        queue,
+        published,
+        pendingQueueCount: queue.filter((a) => a.status === 'queued').length,
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message || 'Gagal memuat status auto-scheduler' });
+    }
+  });
+
+  app.post('/api/articles/auto-scheduler/toggle', (req: Request, res: Response) => {
+    try {
+      const { enabled } = req.body;
+      const config = getSchedulerConfig();
+      config.enabled = Boolean(enabled);
+      saveSchedulerConfig(config);
+      res.json({ success: true, enabled: config.enabled, config });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/articles/auto-scheduler/trigger-now', async (_req: Request, res: Response) => {
+    try {
+      const result = await executeAutoPublishNext(async (article) => {
+        // Send email broadcast to subscribers
+        const subscribers = getSubscribers();
+        const emailList = subscribers.filter((s) => s.status === 'active').map((s) => s.email);
+        const smtp = getSmtpConfig();
+        const transporter = createTransporter(smtp);
+        if (transporter && emailList.length > 0) {
+          await transporter.sendMail({
+            from: `"${smtp.fromName}" <${smtp.fromEmail || smtp.user}>`,
+            bcc: emailList,
+            subject: `[Artikel Baru Terbit] ${article.title}`,
+            text: `Halo Pelaku UMKM!\n\nArtikel baru telah dipublikasikan: "${article.title}"\nKategori: ${article.category}\n\nRingkasan:\n${article.summary}\n\nBaca artikel lengkap di: https://webmurah.biz.id/#/artikel`,
+            html: `<div style="font-family: sans-serif; padding: 20px; line-height: 1.6;">
+              <h2 style="color: #0369a1;">${article.title}</h2>
+              <p style="color: #475569;">${article.summary}</p>
+              <p><a href="https://webmurah.biz.id/#/artikel" style="background:#0284c7;color:#fff;padding:12px 20px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;">Baca Artikel Lengkap</a></p>
+            </div>`,
+          });
+        }
+      });
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/articles/auto-scheduler/add-queue', (req: Request, res: Response) => {
+    try {
+      const { title, subtitle, category, summary, bodyText, imageUrl, targetKeyword } = req.body;
+      if (!title || !summary) {
+        return res.status(400).json({ error: 'Judul dan ringkasan wajib diisi.' });
+      }
+
+      const queue = getArticleQueue();
+      const newQueued: QueuedArticle = {
+        id: 'queued-' + Date.now(),
+        category: category || 'Tips Bisnis & Marketing',
+        categoryColor: 'bg-sky-50 text-sky-800 border-sky-200',
+        title: title.trim(),
+        subtitle: subtitle?.trim() || title.trim(),
+        readTime: '4 Menit Baca',
+        date: new Date().getFullYear().toString(),
+        sourceName: 'Admin Indo Digital',
+        sourceUrl: '#',
+        keyStat: '+100%',
+        keyStatLabel: 'Pertumbuhan',
+        summary: summary.trim(),
+        imageUrl: imageUrl || undefined,
+        metaDescription: summary.slice(0, 150),
+        targetKeyword: targetKeyword || 'digitalisasi UMKM',
+        secondaryKeywords: [],
+        content: { bodyText: bodyText || summary },
+        status: 'queued',
+      };
+
+      queue.push(newQueued);
+      saveArticleQueue(queue);
+      res.json({ success: true, message: 'Artikel berhasil dimasukkan ke antrean auto-post!', article: newQueued });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/articles/published', (_req: Request, res: Response) => {
+    try {
+      const published = getPublishedArticles();
+      res.json({ success: true, articles: published });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Background auto-post worker (memeriksa antrean setiap 30 detik untuk jadwal 08:00 & 17:00 WIB)
+  setInterval(async () => {
+    try {
+      const config = getSchedulerConfig();
+      if (!config.enabled) return;
+
+      const now = Date.now();
+      const scheduledTime = new Date(config.nextPostScheduledAt).getTime();
+
+      if (now >= scheduledTime) {
+        console.log('[Auto-Scheduler] Waktu jadwal publikasi harian tercapai. Memproses artikel antrean...');
+        await executeAutoPublishNext(async (article) => {
+          const subscribers = getSubscribers();
+          const emailList = subscribers.filter((s) => s.status === 'active').map((s) => s.email);
+          const smtp = getSmtpConfig();
+          const transporter = createTransporter(smtp);
+          if (transporter && emailList.length > 0) {
+            await transporter.sendMail({
+              from: `"${smtp.fromName}" <${smtp.fromEmail || smtp.user}>`,
+              bcc: emailList,
+              subject: `[Artikel Baru Terbit] ${article.title}`,
+              text: `Halo Pelaku UMKM!\n\nArtikel baru telah dipublikasikan otomatis: "${article.title}"\nKategori: ${article.category}\n\nRingkasan:\n${article.summary}\n\nBaca artikel lengkap di: https://webmurah.biz.id/#/artikel`,
+              html: `<div style="font-family: sans-serif; padding: 20px; line-height: 1.6;">
+                <h2 style="color: #0369a1;">${article.title}</h2>
+                <p style="color: #475569;">${article.summary}</p>
+                <p><a href="https://webmurah.biz.id/#/artikel" style="background:#0284c7;color:#fff;padding:12px 20px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;">Baca Artikel Lengkap</a></p>
+              </div>`,
+            });
+          }
+        });
+      }
+    } catch (err) {
+      console.error('[Auto-Scheduler] Worker error:', err);
+    }
+  }, 30000);
 
   // Health check
   app.get('/api/health', (_req: Request, res: Response) => {
