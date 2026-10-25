@@ -7,11 +7,24 @@ import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
 import nodemailer from 'nodemailer';
 import {
+  getSubscribers,
+  saveSubscribers,
+  getSmtpConfig,
+  saveSmtpConfig,
+  getNewsletterLogs,
+  dispatchArticleNewsletter,
+  testSendDiagnosticEmail,
+  createTransporter,
+  SubscriberRecord,
+  SmtpConfig,
+} from './server_newsletter';
+import {
   getSchedulerConfig,
   saveSchedulerConfig,
   getArticleQueue,
   saveArticleQueue,
   getPublishedArticles,
+  savePublishedArticles,
   executeAutoPublishNext,
   calculateNextScheduledSlot,
   QueuedArticle,
@@ -182,81 +195,9 @@ Apakah ada bidang usaha atau produk tertentu yang ingin Anda buatkan landing pag
   });
 
   // ================= NEWSLETTER & SUBSCRIBERS BACKEND =================
-  const SUBSCRIBERS_FILE = path.resolve(__dirname, 'data_subscribers.json');
-  const SMTP_CONFIG_FILE = path.resolve(__dirname, 'data_smtp.json');
+  // Functions getSubscribers, saveSubscribers, getSmtpConfig, saveSmtpConfig, createTransporter,
+  // getNewsletterLogs, dispatchArticleNewsletter, testSendDiagnosticEmail are imported from ./server_newsletter.js
 
-  interface SubscriberRecord {
-    email: string;
-    subscribedAt: string;
-    status: 'active' | 'unsubscribed';
-  }
-
-  function getSubscribers(): SubscriberRecord[] {
-    try {
-      if (fs.existsSync(SUBSCRIBERS_FILE)) {
-        const raw = fs.readFileSync(SUBSCRIBERS_FILE, 'utf-8');
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      console.error('Error reading subscribers:', e);
-    }
-    // Default initial seed list including user email
-    const initialList: SubscriberRecord[] = [
-      { email: 'bca.ccpl@gmail.com', subscribedAt: new Date().toISOString(), status: 'active' },
-    ];
-    saveSubscribers(initialList);
-    return initialList;
-  }
-
-  function saveSubscribers(list: SubscriberRecord[]) {
-    try {
-      fs.writeFileSync(SUBSCRIBERS_FILE, JSON.stringify(list, null, 2), 'utf-8');
-    } catch (e) {
-      console.error('Error saving subscribers:', e);
-    }
-  }
-
-  function getSmtpConfig() {
-    try {
-      if (fs.existsSync(SMTP_CONFIG_FILE)) {
-        const raw = fs.readFileSync(SMTP_CONFIG_FILE, 'utf-8');
-        return JSON.parse(raw);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    return {
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '465', 10),
-      secure: (process.env.SMTP_PORT || '465') === '465',
-      user: process.env.SMTP_USER || '',
-      pass: process.env.SMTP_PASS || '',
-      fromName: process.env.SMTP_FROM_NAME || 'Webkilat / Indo Digital',
-      fromEmail: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'no-reply@webmurah.biz.id',
-    };
-  }
-
-  function saveSmtpConfig(config: any) {
-    try {
-      fs.writeFileSync(SMTP_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  function createTransporter(config: any) {
-    if (!config.user || !config.pass) return null;
-    return nodemailer.createTransport({
-      host: config.host || 'smtp.gmail.com',
-      port: Number(config.port) || 465,
-      secure: Number(config.port) === 465,
-      auth: {
-        user: config.user,
-        pass: config.pass,
-      },
-    });
-  }
 
   // 1. Get all newsletter subscribers
   app.get('/api/newsletter/subscribers', (_req: Request, res: Response) => {
@@ -409,195 +350,210 @@ Apakah ada bidang usaha atau produk tertentu yang ingin Anda buatkan landing pag
     }
   });
 
-  // 6. Broadcast Newsletter to all subscribers on new article post
+  // 6. Get Newsletter Delivery Logs & Audit Trail
+  app.get('/api/newsletter/logs', (_req: Request, res: Response) => {
+    try {
+      const logs = getNewsletterLogs();
+      res.json({
+        success: true,
+        count: logs.length,
+        logs,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Gagal memuat log newsletter' });
+    }
+  });
+
+  // 7. Instant Test-Send Diagnostic Email
+  app.post('/api/newsletter/test-send', async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: 'Alamat email tujuan uji coba wajib diisi.' });
+      }
+      const result = await testSendDiagnosticEmail(String(email).trim());
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Gagal mengirim email tes' });
+    }
+  });
+
+  // 8. Broadcast Newsletter to all subscribers on new article post
   app.post('/api/newsletter/broadcast', async (req: Request, res: Response) => {
     try {
-      const {
-        title,
-        subtitle,
-        category,
-        summary,
-        readTime,
-        imageUrl,
-        articleUrl,
-      } = req.body;
-
+      const { title, subtitle, category, summary, readTime, imageUrl, articleUrl } = req.body;
       if (!title) {
         return res.status(400).json({ error: 'Judul artikel wajib diisi untuk broadcast.' });
       }
 
-      const subscribers = getSubscribers().filter((s) => s.status === 'active');
-      const emailList = subscribers.map((s) => s.email);
-
-      const targetUrl = articleUrl || 'https://webmurah.biz.id/#/artikel';
-      const cleanTitle = String(title).trim();
-      const cleanSummary = String(summary || '').trim();
-      const cleanCategory = String(category || 'Artikel UMKM').trim();
-
-      const emailSubject = `[Artikel Baru] ${cleanTitle} - Webkilat`;
-
-      // Build HTML email template
-      const emailHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${cleanTitle}</title>
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; padding: 30px 15px;">
-            <tr>
-              <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; max-width: 600px;">
-                  <!-- Header -->
-                  <tr>
-                    <td style="background: linear-gradient(135deg, #1D3582 0%, #0284c7 100%); padding: 30px 30px; text-align: center;">
-                      <div style="display: inline-block; background-color: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 20px; color: #fef08a; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;">
-                        UPDATE ARTIKEL &amp; INSPIRASI UMKM
-                      </div>
-                      <h1 style="color: #ffffff; font-size: 22px; font-weight: 900; margin: 0; letter-spacing: -0.5px;">
-                        Webkilat &bull; Indo Digital
-                      </h1>
-                      <p style="color: #e0f2fe; font-size: 13px; margin: 6px 0 0 0;">
-                        Kisah Sukses, Tips Penjualan, &amp; Strategi Digitalisasi Bisnis
-                      </p>
-                    </td>
-                  </tr>
-
-                  <!-- Main Content Area -->
-                  <tr>
-                    <td style="padding: 32px 30px;">
-                      <!-- Category & Read Time -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
-                        <tr>
-                          <td>
-                            <span style="background-color: #f0fdf4; color: #166534; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid #bbf7d0; text-transform: uppercase;">
-                              ${cleanCategory}
-                            </span>
-                          </td>
-                          <td align="right" style="font-size: 12px; color: #64748b; font-weight: 600;">
-                            &bull; ${readTime || '4 Menit Baca'}
-                          </td>
-                        </tr>
-                      </table>
-
-                      <!-- Article Title -->
-                      <h2 style="color: #0f172a; font-size: 20px; font-weight: 800; line-height: 1.4; margin: 0 0 16px 0;">
-                        ${cleanTitle}
-                      </h2>
-
-                      <!-- Cover Image (if available) -->
-                      ${
-                        imageUrl
-                          ? `
-                        <div style="margin: 16px 0 20px 0; border-radius: 12px; overflow: hidden; background-color: #f1f5f9; text-align: center;">
-                          <img src="${imageUrl}" alt="${cleanTitle}" style="width: 100%; max-height: 280px; object-fit: cover; display: block;" />
-                        </div>
-                      `
-                          : ''
-                      }
-
-                      <!-- Summary -->
-                      <p style="color: #334155; font-size: 14px; line-height: 1.7; margin: 0 0 24px 0;">
-                        ${cleanSummary}
-                      </p>
-
-                      <!-- CTA Button -->
-                      <div style="text-align: center; padding: 12px 0 20px 0;">
-                        <a href="${targetUrl}" target="_blank" style="background-color: #0284c7; color: #ffffff; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 800; font-size: 14px; display: inline-block; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);">
-                          BACA KISAH LENGKAP &amp; STRATEGI &rarr;
-                        </a>
-                      </div>
-
-                      <div style="background-color: #fffbeb; border-radius: 12px; border: 1px solid #fef3c7; padding: 14px 18px; margin-top: 10px;">
-                        <p style="margin: 0; color: #92400e; font-size: 12px; font-weight: 600; line-height: 1.5;">
-                          💡 <strong>Punya bisnis serupa?</strong> Buat landing page promo Flash Sale Rp 499.000 (1 hari jadi &amp; gratis domain) di <a href="https://webmurah.biz.id" style="color: #b45309; text-decoration: underline;">webmurah.biz.id</a>
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-
-                  <!-- Footer -->
-                  <tr>
-                    <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 24px 30px; text-align: center;">
-                      <p style="color: #64748b; font-size: 12px; margin: 0 0 8px 0; font-weight: 600;">
-                        Webkilat by Indo Digital Solution
-                      </p>
-                      <p style="color: #94a3b8; font-size: 11px; margin: 0; line-height: 1.5;">
-                        Anda menerima email ini karena terdaftar pada Newsletter Pelaku UMKM webmurah.biz.id.<br/>
-                        WhatsApp Admin: 0896-7368-6625 &bull; Kota Bekasi, Indonesia
-                      </p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
-      `;
-
-      // Plain text fallback
-      const emailText = `
-Halo Pelaku UMKM Indonesia!
-
-Kami baru saja mempublikasikan artikel inspiratif baru:
-"${cleanTitle}"
-Kategori: ${cleanCategory} (${readTime || '4 Menit Baca'})
-
-Ringkasan:
-${cleanSummary}
-
-Baca selengkapnya di web kami:
-${targetUrl}
-
---
-Webkilat by Indo Digital Solution
-WhatsApp: 0896-7368-6625
-Website: https://webmurah.biz.id
-      `.trim();
-
-      // Create mailto fallback link with all subscriber emails in BCC
-      const bccString = emailList.join(',');
-      const mailtoUrl = `mailto:?bcc=${encodeURIComponent(bccString)}&subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailText)}`;
-
-      // Attempt SMTP broadcast if configured
-      const smtp = getSmtpConfig();
-      const transporter = createTransporter(smtp);
-      let isSentViaSmtp = false;
-      let smtpErrorMessage = '';
-
-      if (transporter && emailList.length > 0) {
-        try {
-          await transporter.sendMail({
-            from: `"${smtp.fromName}" <${smtp.fromEmail || smtp.user}>`,
-            bcc: emailList,
-            subject: emailSubject,
-            text: emailText,
-            html: emailHtml,
-          });
-          isSentViaSmtp = true;
-        } catch (err: any) {
-          smtpErrorMessage = err.message || 'Gagal mengirim via server SMTP';
-          console.error('SMTP Broadcast Error:', err);
-        }
-      }
+      const dispatchResult = await dispatchArticleNewsletter(
+        {
+          title,
+          subtitle,
+          category,
+          summary,
+          readTime,
+          imageUrl,
+          articleUrl: articleUrl || 'https://webmurah.biz.id/#/artikel',
+          status: 'published',
+        },
+        'admin_manual'
+      );
 
       res.json({
-        success: true,
-        subscriberCount: emailList.length,
-        recipients: emailList,
-        smtpConfigured: Boolean(smtp.user && smtp.pass),
-        smtpSent: isSentViaSmtp,
-        smtpError: smtpErrorMessage || null,
-        mailtoUrl,
-        subject: emailSubject,
-        emailBodyPreview: emailText,
+        success: dispatchResult.success,
+        status: dispatchResult.status,
+        message: dispatchResult.message,
+        subscriberCount: dispatchResult.recipientCount,
+        recipients: dispatchResult.recipients,
+        smtpConfigured: Boolean(getSmtpConfig().user && getSmtpConfig().pass),
+        smtpSent: dispatchResult.status === 'DELIVERED',
+        smtpError: dispatchResult.error || null,
+        mailtoUrl: dispatchResult.mailtoUrl,
+        subject: `[Artikel Baru] ${title} - Webkilat`,
+        emailBodyPreview: summary,
       });
     } catch (err: any) {
       console.error('Broadcast error:', err);
       res.status(500).json({ error: err.message || 'Gagal melakukan broadcast newsletter.' });
+    }
+  });
+
+  // 9. Universal Article Publishing & Trigger Hook (Admin UI, External API, Google AI Studio)
+  app.post('/api/articles/publish', async (req: Request, res: Response) => {
+    try {
+      const {
+        id,
+        title,
+        subtitle,
+        category,
+        categoryColor,
+        readTime,
+        summary,
+        imageUrl,
+        videoUrl,
+        videoType,
+        content,
+        status = 'published', // 'published' | 'draft'
+        targetKeyword,
+        secondaryKeywords,
+        source = 'ai_studio_api', // 'admin_manual' | 'ai_studio_api' | 'external_webhook'
+        sendNewsletter = true,
+      } = req.body;
+
+      if (!title || !summary) {
+        return res.status(400).json({ error: 'Parameter judul (title) dan ringkasan (summary) wajib diisi.' });
+      }
+
+      const articleId =
+        id ||
+        'art-' +
+          title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .slice(0, 40) +
+          '-' +
+          Date.now().toString().slice(-4);
+
+      const articleObj: QueuedArticle = {
+        id: articleId,
+        category: category || 'Tips & Digitalisasi UMKM',
+        categoryColor: categoryColor || 'bg-sky-50 text-sky-800 border-sky-200',
+        title: title.trim(),
+        subtitle: subtitle?.trim() || title.trim(),
+        readTime: readTime || '4 Menit Baca',
+        date: new Date().getFullYear().toString(),
+        sourceName: 'Admin Indo Digital',
+        sourceUrl: '#',
+        keyStat: '+100%',
+        keyStatLabel: 'Pertumbuhan',
+        summary: summary.trim(),
+        imageUrl: imageUrl || undefined,
+        metaDescription: summary.slice(0, 155),
+        targetKeyword: targetKeyword || 'digitalisasi UMKM',
+        secondaryKeywords: secondaryKeywords || [],
+        content:
+          typeof content === 'object' && content?.bodyText
+            ? content
+            : { bodyText: typeof content === 'string' ? content : summary },
+        status: status === 'draft' ? 'queued' : 'published',
+        publishedAt: status === 'published' ? new Date().toISOString() : undefined,
+      };
+
+      if (status === 'published') {
+        const publishedList = getPublishedArticles();
+        const updated = [articleObj, ...publishedList.filter((a) => a.id !== articleId)];
+        savePublishedArticles(updated);
+      } else {
+        const queue = getArticleQueue();
+        queue.push(articleObj);
+        saveArticleQueue(queue);
+      }
+
+      // Trigger newsletter broadcast only if published and requested
+      let newsletterResult: any = null;
+      if (status === 'published' && sendNewsletter) {
+        const dispatchSource =
+          source === 'admin_manual'
+            ? 'admin_manual'
+            : source === 'external_webhook'
+            ? 'external_webhook'
+            : 'ai_studio_api';
+
+        newsletterResult = await dispatchArticleNewsletter(
+          {
+            id: articleId,
+            title: articleObj.title,
+            subtitle: articleObj.subtitle,
+            category: articleObj.category,
+            summary: articleObj.summary,
+            readTime: articleObj.readTime,
+            imageUrl: articleObj.imageUrl,
+            articleUrl: 'https://webmurah.biz.id/#/artikel',
+            status: 'published',
+          },
+          dispatchSource
+        );
+      }
+
+      res.json({
+        success: true,
+        message:
+          status === 'published'
+            ? `Artikel "${articleObj.title}" berhasil dipublikasikan dan ${
+                newsletterResult?.status === 'DELIVERED'
+                  ? 'email notifikasi sukses dikirim ke subscriber!'
+                  : 'siap dibaca!'
+              }`
+            : `Artikel berhasil disimpan ke antrean draf.`,
+        article: articleObj,
+        newsletter: newsletterResult,
+      });
+    } catch (err: any) {
+      console.error('Publish article error:', err);
+      res.status(500).json({ error: err.message || 'Gagal memproses publikasi artikel' });
+    }
+  });
+
+  // 10. Webhook endpoint for external automation (n8n, Make, Zapier, AI Studio script)
+  app.post('/api/articles/webhook', async (req: Request, res: Response) => {
+    try {
+      req.body.source = 'external_webhook';
+      const { title, summary } = req.body;
+      if (!title || !summary) {
+        return res.status(400).json({ error: 'Webhook payload membutuhkan title dan summary.' });
+      }
+
+      // Re-route to publish handler logic
+      const publishRes = await fetch(`http://localhost:${PORT}/api/articles/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body),
+      });
+      const data = await publishRes.json();
+      res.status(publishRes.status).json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -639,24 +595,7 @@ Website: https://webmurah.biz.id
   app.post('/api/articles/auto-scheduler/trigger-now', async (_req: Request, res: Response) => {
     try {
       const result = await executeAutoPublishNext(async (article) => {
-        // Send email broadcast to subscribers
-        const subscribers = getSubscribers();
-        const emailList = subscribers.filter((s) => s.status === 'active').map((s) => s.email);
-        const smtp = getSmtpConfig();
-        const transporter = createTransporter(smtp);
-        if (transporter && emailList.length > 0) {
-          await transporter.sendMail({
-            from: `"${smtp.fromName}" <${smtp.fromEmail || smtp.user}>`,
-            bcc: emailList,
-            subject: `[Artikel Baru Terbit] ${article.title}`,
-            text: `Halo Pelaku UMKM!\n\nArtikel baru telah dipublikasikan: "${article.title}"\nKategori: ${article.category}\n\nRingkasan:\n${article.summary}\n\nBaca artikel lengkap di: https://webmurah.biz.id/#/artikel`,
-            html: `<div style="font-family: sans-serif; padding: 20px; line-height: 1.6;">
-              <h2 style="color: #0369a1;">${article.title}</h2>
-              <p style="color: #475569;">${article.summary}</p>
-              <p><a href="https://webmurah.biz.id/#/artikel" style="background:#0284c7;color:#fff;padding:12px 20px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;">Baca Artikel Lengkap</a></p>
-            </div>`,
-          });
-        }
+        await dispatchArticleNewsletter(article, 'auto_scheduler');
       });
       res.json(result);
     } catch (e: any) {
@@ -722,23 +661,7 @@ Website: https://webmurah.biz.id
       if (now >= scheduledTime) {
         console.log('[Auto-Scheduler] Waktu jadwal publikasi harian tercapai. Memproses artikel antrean...');
         await executeAutoPublishNext(async (article) => {
-          const subscribers = getSubscribers();
-          const emailList = subscribers.filter((s) => s.status === 'active').map((s) => s.email);
-          const smtp = getSmtpConfig();
-          const transporter = createTransporter(smtp);
-          if (transporter && emailList.length > 0) {
-            await transporter.sendMail({
-              from: `"${smtp.fromName}" <${smtp.fromEmail || smtp.user}>`,
-              bcc: emailList,
-              subject: `[Artikel Baru Terbit] ${article.title}`,
-              text: `Halo Pelaku UMKM!\n\nArtikel baru telah dipublikasikan otomatis: "${article.title}"\nKategori: ${article.category}\n\nRingkasan:\n${article.summary}\n\nBaca artikel lengkap di: https://webmurah.biz.id/#/artikel`,
-              html: `<div style="font-family: sans-serif; padding: 20px; line-height: 1.6;">
-                <h2 style="color: #0369a1;">${article.title}</h2>
-                <p style="color: #475569;">${article.summary}</p>
-                <p><a href="https://webmurah.biz.id/#/artikel" style="background:#0284c7;color:#fff;padding:12px 20px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;">Baca Artikel Lengkap</a></p>
-              </div>`,
-            });
-          }
+          await dispatchArticleNewsletter(article, 'auto_scheduler');
         });
       }
     } catch (err) {
