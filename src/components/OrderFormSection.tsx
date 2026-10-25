@@ -28,6 +28,8 @@ import {
   ArrowDown,
   ArrowRight,
   RefreshCw,
+  Crown,
+  Star,
 } from 'lucide-react';
 
 export interface DomainCheckItem {
@@ -41,6 +43,7 @@ export interface DomainCheckItem {
 
 const INITIAL_FORM: OrderFormData = {
   namaSalesKonsultan: '',
+  pilihanPaket: 'umkm',
   namaLengkap: '',
   nomorWa: '',
   email: '',
@@ -60,6 +63,7 @@ const INITIAL_FORM: OrderFormData = {
 
 const SAMPLE_DEMO_DATA: OrderFormData = {
   namaSalesKonsultan: 'Rian (Konsultan Webkilat)',
+  pilihanPaket: 'umkm',
   namaLengkap: 'Budi Santoso',
   nomorWa: '081234567890',
   email: 'budi.santoso@gmail.com',
@@ -98,6 +102,30 @@ export const OrderFormSection: React.FC = () => {
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
   const [agreedTerms, setAgreedTerms] = useState(true);
 
+  // Pilihan Paket: 'umkm' vs 'elite'
+  const [selectedPackage, setSelectedPackage] = useState<'umkm' | 'elite'>(() => {
+    try {
+      const stored = sessionStorage.getItem('selected_package');
+      if (stored === 'elite' || stored === 'umkm') return stored;
+      const saved = localStorage.getItem('webkilat_saved_form');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.pilihanPaket === 'elite' || parsed.pilihanPaket === 'umkm') return parsed.pilihanPaket;
+      }
+      return 'umkm';
+    } catch {
+      return 'umkm';
+    }
+  });
+
+  const handleSelectPackageMode = (pkg: 'umkm' | 'elite') => {
+    setSelectedPackage(pkg);
+    setFormData((prev) => ({ ...prev, pilihanPaket: pkg }));
+    try {
+      sessionStorage.setItem('selected_package', pkg);
+    } catch {}
+  };
+
   // Unified Domain Checker states
   const [domainSearchInput, setDomainSearchInput] = useState('');
   const [isCheckingDomain, setIsCheckingDomain] = useState(false);
@@ -135,8 +163,15 @@ export const OrderFormSection: React.FC = () => {
         sessionStorage.setItem('promo_50_active', 'true');
       } catch {}
       setOrderInstruction(
-        '🎉 SELAMAT! PROMO DISKON 50% AKTIF. Total tagihan pembuatan landing page otomatis menjadi Rp 249.000 (Hemat Rp 250.000).'
+        '🎉 SELAMAT! PROMO DISKON 50% AKTIF. Khusus Paket UMKM otomatis menjadi Rp 249.500 (Hemat Rp 249.500).'
       );
+    };
+
+    const handlePackageSelected = (e: CustomEvent<'umkm' | 'elite'>) => {
+      if (e.detail && (e.detail === 'umkm' || e.detail === 'elite')) {
+        setSelectedPackage(e.detail);
+        setFormData((prev) => ({ ...prev, pilihanPaket: e.detail }));
+      }
     };
 
     try {
@@ -152,13 +187,21 @@ export const OrderFormSection: React.FC = () => {
       if (sessionStorage.getItem('promo_50_active') === 'true') {
         setIsPromoActive(true);
       }
+
+      const storedPkg = sessionStorage.getItem('selected_package');
+      if (storedPkg === 'elite' || storedPkg === 'umkm') {
+        setSelectedPackage(storedPkg);
+        setFormData((prev) => ({ ...prev, pilihanPaket: storedPkg }));
+      }
     } catch {}
 
     window.addEventListener('domain-selected' as any, handleDomainSelected);
     window.addEventListener('promo-50-claimed' as any, handlePromoClaimed);
+    window.addEventListener('package-selected' as any, handlePackageSelected);
     return () => {
       window.removeEventListener('domain-selected' as any, handleDomainSelected);
       window.removeEventListener('promo-50-claimed' as any, handlePromoClaimed);
+      window.removeEventListener('package-selected' as any, handlePackageSelected);
     };
   }, []);
 
@@ -486,6 +529,153 @@ export const OrderFormSection: React.FC = () => {
         {/* MAIN FORM CONTAINER (UNIFIED DOMAIN CHECKER + CLIENT & PRODUCT DETAILS) */}
         {/* ========================================================================= */}
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-5 sm:p-10 space-y-10">
+
+          {/* ========================================================================= */}
+          {/* STEP 0: PILIH PAKET LAYANAN (PAKET UMKM vs PAKET ELITE)                   */}
+          {/* ========================================================================= */}
+          <div id="pilih-paket-section" className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-700 to-indigo-600 text-white text-xs font-black flex items-center justify-center shadow-xs">
+                  ★
+                </span>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-black text-slate-900">
+                    Pilih Paket Layanan Website
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Tentukan skala website yang Anda butuhkan (bisa diubah kapan saja)
+                  </p>
+                </div>
+              </div>
+              <span className="inline-block text-[11px] font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200 w-fit">
+                Paket Terpilih:{' '}
+                <strong className="text-slate-900 uppercase">
+                  {selectedPackage === 'elite'
+                    ? 'Paket Elite (Rp 3.000.000)'
+                    : isPromoActive
+                    ? 'Paket UMKM (Diskon Rp 249.500)'
+                    : 'Paket UMKM (Rp 499.000)'}
+                </strong>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Option 1: Paket UMKM */}
+              <div
+                onClick={() => handleSelectPackageMode('umkm')}
+                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
+                  selectedPackage === 'umkm'
+                    ? 'border-sky-500 bg-sky-50/50 shadow-md ring-2 ring-sky-300/60'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60'
+                }`}
+              >
+                {selectedPackage === 'umkm' && (
+                  <span className="absolute top-3.5 right-3.5 w-6 h-6 rounded-full bg-sky-600 text-white flex items-center justify-center shadow-xs">
+                    <Check className="w-4 h-4 stroke-[3]" />
+                  </span>
+                )}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-sky-800 bg-sky-100 px-2 py-0.5 rounded">
+                      1 Halaman Kilat 24 Jam
+                    </span>
+                    {isPromoActive && (
+                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 animate-pulse">
+                        Diskon 50% Banner
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="text-base sm:text-lg font-black text-slate-900">
+                    PAKET UMKM
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    Landing page fokus konversi penjualan kilat 24 jam. Termasuk free domain (.my.id/.biz.id), cloud hosting 1 tahun, copywriting, &amp; tombol WA.
+                  </p>
+                </div>
+
+                <div className="pt-4 mt-3 border-t border-slate-200/80 flex items-baseline justify-between">
+                  <span className="text-xs text-slate-500 font-semibold">Total Investasi:</span>
+                  <div className="text-right">
+                    {isPromoActive ? (
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-xs text-slate-400 line-through">Rp 499.000</span>
+                        <span className="text-xl font-black text-emerald-700">Rp 249.500</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-xs text-slate-400 line-through">Rp 1.800.000</span>
+                        <span className="text-xl font-black text-sky-600">Rp 499.000</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Option 2: Paket Elite */}
+              <div
+                onClick={() => handleSelectPackageMode('elite')}
+                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
+                  selectedPackage === 'elite'
+                    ? 'border-amber-500 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-white shadow-xl ring-2 ring-amber-400/60'
+                    : 'border-slate-200 bg-white hover:border-amber-300 hover:bg-slate-50/60'
+                }`}
+              >
+                {selectedPackage === 'elite' ? (
+                  <span className="absolute top-3.5 right-3.5 w-6 h-6 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center shadow-xs font-black">
+                    <Check className="w-4 h-4 stroke-[3]" />
+                  </span>
+                ) : (
+                  <span className="absolute top-3.5 right-3.5 text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                    Recommended
+                  </span>
+                )}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
+                      selectedPackage === 'elite'
+                        ? 'text-amber-300 bg-amber-400/20 border border-amber-400/40'
+                        : 'text-amber-800 bg-amber-100'
+                    }`}>
+                      Multi-Halaman &bull; Sampai 7 Hal
+                    </span>
+                    <span className={`text-[10px] font-bold ${
+                      selectedPackage === 'elite' ? 'text-amber-300' : 'text-slate-500'
+                    }`}>
+                      Harga Net
+                    </span>
+                  </div>
+                  <h4 className={`text-base sm:text-lg font-black ${
+                    selectedPackage === 'elite' ? 'text-white' : 'text-slate-900'
+                  }`}>
+                    PAKET ELITE (Web Custom)
+                  </h4>
+                  <p className={`text-xs leading-relaxed font-medium ${
+                    selectedPackage === 'elite' ? 'text-slate-300' : 'text-slate-600'
+                  }`}>
+                    Website custom korporat sampai 7 halaman, desain eksklusif responsif, optimasi PageSpeed tinggi, form kontak &amp; WA, dasar SEO on-page, dan gratis revisi 2x.
+                  </p>
+                </div>
+
+                <div className={`pt-4 mt-3 border-t flex items-baseline justify-between ${
+                  selectedPackage === 'elite' ? 'border-slate-800' : 'border-slate-200/80'
+                }`}>
+                  <span className={`text-xs font-semibold ${
+                    selectedPackage === 'elite' ? 'text-slate-400' : 'text-slate-500'
+                  }`}>
+                    Harga Tetap (Net):
+                  </span>
+                  <div className="text-right">
+                    <span className={`text-xl font-black ${
+                      selectedPackage === 'elite' ? 'text-amber-400' : 'text-slate-900'
+                    }`}>
+                      Rp 3.000.000
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* ========================================================================= */}
           {/* STEP 1: UNIFIED BOX CEK KETERSEDIAAN DOMAIN (MATCHING USER SCREENSHOT)     */}
@@ -1150,38 +1340,71 @@ export const OrderFormSection: React.FC = () => {
             </div>
 
             {/* ========================================================================= */}
-            {/* STEP 5: SYARAT & KETENTUAN HARGA PROMO                                    */}
+            {/* STEP 5: SYARAT & KETENTUAN LAYANAN                                        */}
             {/* ========================================================================= */}
-            <div className="p-5 sm:p-6 bg-amber-50/90 rounded-2xl border-2 border-amber-300 space-y-3.5 shadow-xs">
+            <div className={`p-5 sm:p-6 rounded-2xl border-2 space-y-3.5 shadow-xs ${
+              selectedPackage === 'elite'
+                ? 'bg-amber-50/70 border-amber-400'
+                : 'bg-amber-50/90 border-amber-300'
+            }`}>
               <div className="flex items-center gap-2 text-amber-950 font-black text-xs sm:text-sm uppercase tracking-wider">
                 <FileText className="w-4 h-4 text-amber-700 shrink-0" />
-                <span>Syarat &amp; Ketentuan Harga Promo (Rp 499.000)</span>
+                <span>
+                  {selectedPackage === 'elite'
+                    ? 'Syarat & Ketentuan Layanan Paket Elite (Rp 3.000.000)'
+                    : isPromoActive
+                    ? 'Syarat & Ketentuan Paket UMKM (Promo Diskon 50% - Rp 249.500)'
+                    : 'Syarat & Ketentuan Paket UMKM (Harga Flash Sale - Rp 499.000)'}
+                </span>
               </div>
 
-              <ul className="space-y-2 text-xs text-slate-700 leading-relaxed">
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-600 font-bold shrink-0">&bull;</span>
-                  <span><strong>Free revisi 1 kali</strong>, untuk revisi kedua dan seterusnya akan dikenakan biaya Rp 50.000 per revisi.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-600 font-bold shrink-0">&bull;</span>
-                  <span><strong>Tidak mendapatkan email bisnis</strong> resmi (nama_bisnis@domain).</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-600 font-bold shrink-0">&bull;</span>
-                  <span><strong>Free domain</strong> hanya berlaku untuk domain <strong>.my.id</strong> dan <strong>.biz.id</strong>.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-600 font-bold shrink-0">&bull;</span>
-                  <span>Untuk domain seperti <strong>.com</strong>, <strong>.net</strong>, <strong>.id</strong>, dan lainnya akan dikenakan biaya pembelian domain.</span>
-                </li>
-                <li className="flex items-start gap-2 p-2.5 bg-amber-100/80 rounded-xl border border-amber-300">
-                  <span className="text-amber-800 font-black shrink-0 text-sm">⚠️</span>
-                  <span className="text-amber-950 font-bold leading-relaxed">
-                    Setelah web jadi kami akan mengirimkan invoice dengan batas waktu <strong>1 x 24 jam</strong> untuk pembayaran, jika sudah melewati batas waktu kami belum menerima pembayaran maka status web akan kami pending (tidak bisa online).
-                  </span>
-                </li>
-              </ul>
+              {selectedPackage === 'elite' ? (
+                <ul className="space-y-2 text-xs text-slate-700 leading-relaxed">
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold shrink-0">&bull;</span>
+                    <span><strong>Gratis revisi 2 kali</strong> untuk memastikan seluruh desain, konten, dan fungsionalitas berjalan optimal.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold shrink-0">&bull;</span>
+                    <span><strong>Mencakup hingga 7 halaman</strong> terintegrasi (Home, Tentang Kami, Layanan, Galeri/Portfolio, Blog, Kontak, dll.).</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold shrink-0">&bull;</span>
+                    <span><strong>Optimasi PageSpeed &amp; Dasar SEO On-page</strong> disertakan untuk kecepatan dan pengindeksan Google.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold shrink-0">&bull;</span>
+                    <span><strong>Termasuk setup domain &amp; cloud hosting</strong> selama 1 tahun penuh dengan sertifikat keamanan SSL HTTPS.</span>
+                  </li>
+                  <li className="flex items-start gap-2 p-2.5 bg-amber-100/80 rounded-xl border border-amber-300">
+                    <span className="text-amber-800 font-black shrink-0 text-sm">⚠️</span>
+                    <span className="text-amber-950 font-bold leading-relaxed">
+                      Setelah website selesai dikembangkan, kami akan mengirimkan invoice pelunasan dengan batas waktu <strong>1 x 24 jam</strong>.
+                    </span>
+                  </li>
+                </ul>
+              ) : (
+                <ul className="space-y-2 text-xs text-slate-700 leading-relaxed">
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold shrink-0">&bull;</span>
+                    <span><strong>Free revisi 1 kali</strong>, untuk revisi kedua dan seterusnya dikenakan biaya Rp 50.000 per revisi.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold shrink-0">&bull;</span>
+                    <span><strong>Tidak mendapatkan email bisnis</strong> resmi (nama_bisnis@domain).</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold shrink-0">&bull;</span>
+                    <span><strong>Free domain</strong> berlaku untuk ekstensi <strong>.my.id</strong> dan <strong>.biz.id</strong> (ekstensi .com / .net / .id dikenakan biaya domain reguler).</span>
+                  </li>
+                  <li className="flex items-start gap-2 p-2.5 bg-amber-100/80 rounded-xl border border-amber-300">
+                    <span className="text-amber-800 font-black shrink-0 text-sm">⚠️</span>
+                    <span className="text-amber-950 font-bold leading-relaxed">
+                      Setelah web jadi kami akan mengirimkan invoice dengan batas waktu <strong>1 x 24 jam</strong> untuk pembayaran, jika sudah melewati batas waktu status web akan kami pending.
+                    </span>
+                  </li>
+                </ul>
+              )}
 
               <div className="pt-3 border-t border-amber-200/80">
                 <label className="flex items-start gap-2.5 cursor-pointer select-none">
@@ -1247,7 +1470,9 @@ export const OrderFormSection: React.FC = () => {
             {/* ========================================================================= */}
             <div
               className={`p-5 sm:p-6 rounded-2xl border-2 transition-all ${
-                isPromoActive
+                selectedPackage === 'elite'
+                  ? 'bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border-amber-400 text-white shadow-xl ring-2 ring-amber-400/30'
+                  : isPromoActive
                   ? 'bg-gradient-to-r from-amber-50 via-yellow-50/80 to-emerald-50 border-amber-400 shadow-md ring-2 ring-amber-300/60'
                   : 'bg-sky-50/60 border-sky-200'
               }`}
@@ -1255,32 +1480,49 @@ export const OrderFormSection: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    <span className={`text-xs font-bold uppercase tracking-wider ${
+                      selectedPackage === 'elite' ? 'text-slate-300' : 'text-slate-700'
+                    }`}>
                       Ringkasan Total Tagihan:
                     </span>
-                    {isPromoActive ? (
+
+                    {selectedPackage === 'elite' ? (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-[11px] uppercase tracking-wider shadow-xs border border-amber-500">
+                        <Crown className="w-3.5 h-3.5 fill-current" />
+                        <span>PAKET ELITE &bull; HARGA NET (TIDAK BERLAKU PROMO BANNER)</span>
+                      </span>
+                    ) : isPromoActive ? (
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-[11px] uppercase tracking-wider shadow-xs animate-pulse border border-amber-600/30">
-                        <Sparkles className="w-3 h-3 fill-current" />
+                        <Sparkles className="w-3.5 h-3.5 fill-current" />
                         <span>PROMO DISKON 50% AKTIF</span>
                       </span>
                     ) : (
                       <span className="px-2.5 py-0.5 rounded-full bg-sky-200 text-sky-900 font-bold text-[10px] uppercase">
-                        Harga Normal
+                        Harga Flash Sale UMKM
                       </span>
                     )}
                   </div>
 
                   <div className="flex items-baseline gap-3">
-                    {isPromoActive ? (
+                    {selectedPackage === 'elite' ? (
+                      <>
+                        <span className="text-3xl sm:text-4xl font-black text-amber-400">
+                          Rp 3.000.000
+                        </span>
+                        <span className="text-xs font-bold text-slate-400">
+                          / project all-in (sampai 7 halaman)
+                        </span>
+                      </>
+                    ) : isPromoActive ? (
                       <>
                         <span className="text-3xl sm:text-4xl font-black text-emerald-700">
-                          Rp 249.000
+                          Rp 249.500
                         </span>
                         <span className="text-base sm:text-lg font-bold text-slate-400 line-through">
                           Rp 499.000
                         </span>
                         <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
-                          HEMAT 50% (Rp 250.000)
+                          HEMAT 50% (Rp 249.500)
                         </span>
                       </>
                     ) : (
@@ -1291,14 +1533,23 @@ export const OrderFormSection: React.FC = () => {
                         <span className="text-base font-bold text-slate-400 line-through">
                           Rp 1.800.000
                         </span>
+                        <span className="text-xs font-bold text-slate-500">
+                          / all-in
+                        </span>
                       </>
                     )}
                   </div>
 
-                  <p className="text-xs text-slate-600 font-medium">
-                    {isPromoActive ? (
+                  <p className={`text-xs font-medium ${
+                    selectedPackage === 'elite' ? 'text-slate-300' : 'text-slate-600'
+                  }`}>
+                    {selectedPackage === 'elite' ? (
+                      <span className="text-amber-200">
+                        ✓ Paket Elite mencakup sampai 7 halaman custom, optimasi PageSpeed, form kontak/WA, dasar SEO on-page, dan gratis revisi 2x. Promo banner 50% tidak berlaku untuk paket ini.
+                      </span>
+                    ) : isPromoActive ? (
                       <span className="text-emerald-900 font-semibold">
-                        ✓ Diskon 50% diterapkan! Nota WhatsApp otomatis menyertakan status promo untuk verifikasi Admin.
+                        ✓ Diskon 50% via banner diterapkan! Nota WhatsApp otomatis menyertakan status promo untuk verifikasi Admin.
                       </span>
                     ) : (
                       <span>
@@ -1308,38 +1559,40 @@ export const OrderFormSection: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="shrink-0 flex items-center gap-2">
-                  {!isPromoActive ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsPromoActive(true);
-                        setFormData((prev) => ({ ...prev, isPromoActive: true }));
-                        try {
-                          sessionStorage.setItem('promo_50_active', 'true');
-                        } catch {}
-                      }}
-                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer transform hover:scale-102 active:scale-95"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 fill-current" />
-                      <span>Klaim Diskon 50%</span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsPromoActive(false);
-                        setFormData((prev) => ({ ...prev, isPromoActive: false }));
-                        try {
-                          sessionStorage.removeItem('promo_50_active');
-                        } catch {}
-                      }}
-                      className="text-[11px] font-bold text-slate-500 hover:text-slate-800 underline cursor-pointer"
-                    >
-                      Gunakan Harga Normal (Rp 499rb)
-                    </button>
-                  )}
-                </div>
+                {selectedPackage === 'umkm' && (
+                  <div className="shrink-0 flex items-center gap-2">
+                    {!isPromoActive ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsPromoActive(true);
+                          setFormData((prev) => ({ ...prev, isPromoActive: true }));
+                          try {
+                            sessionStorage.setItem('promo_50_active', 'true');
+                          } catch {}
+                        }}
+                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer transform hover:scale-102 active:scale-95"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 fill-current" />
+                        <span>Klaim Diskon 50%</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsPromoActive(false);
+                          setFormData((prev) => ({ ...prev, isPromoActive: false }));
+                          try {
+                            sessionStorage.removeItem('promo_50_active');
+                          } catch {}
+                        }}
+                        className="text-[11px] font-bold text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                      >
+                        Gunakan Harga Normal (Rp 499rb)
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1348,7 +1601,9 @@ export const OrderFormSection: React.FC = () => {
               <button
                 type="submit"
                 className={`relative group w-full py-4 px-6 text-base font-extrabold text-white rounded-2xl shadow-xl transition-all cursor-pointer flex items-center justify-center gap-3 overflow-hidden active:scale-99 ${
-                  isPromoActive
+                  selectedPackage === 'elite'
+                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/25'
+                    : isPromoActive
                     ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 hover:from-emerald-700 hover:to-green-700 hover:shadow-emerald-500/30'
                     : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-600 hover:from-emerald-700 hover:to-green-700 hover:shadow-emerald-500/25'
                 }`}
@@ -1356,9 +1611,11 @@ export const OrderFormSection: React.FC = () => {
                 <div className="absolute inset-0 bg-white/15 translate-y-full group-hover:translate-y-0 transition-transform duration-300 pointer-events-none" />
                 <Send className="relative w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-0.5 transition-transform" />
                 <span className="relative tracking-wide">
-                  {isPromoActive
-                    ? 'KIRIM PESANAN VIA WHATSAPP (PROMO RP 249.000)'
-                    : 'KIRIM PESANAN VIA WHATSAPP (RP 499.000)'}
+                  {selectedPackage === 'elite'
+                    ? 'KIRIM PESANAN PAKET ELITE VIA WHATSAPP (RP 3.000.000)'
+                    : isPromoActive
+                    ? 'KIRIM PESANAN VIA WHATSAPP (PROMO RP 249.500)'
+                    : 'KIRIM PESANAN SEKARANG VIA WHATSAPP (RP 499.000)'}
                 </span>
               </button>
 

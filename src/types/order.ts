@@ -1,5 +1,7 @@
 export interface OrderFormData {
   namaSalesKonsultan: string;
+  // Pilihan Paket
+  pilihanPaket?: 'umkm' | 'elite';
   // 1. Data Klien
   namaLengkap: string;
   nomorWa: string;
@@ -28,6 +30,7 @@ export const ADMIN_WA_DISPLAY = '0896-7368-6625';
 
 export function formatOrderToWhatsApp(data: OrderFormData, isPromoActiveOverride?: boolean): string {
   const isPromo = isPromoActiveOverride ?? data.isPromoActive ?? false;
+  const isElite = data.pilihanPaket === 'elite';
   const tujuanList = [...data.tujuanLandingPage];
   if (data.tujuanLainnya.trim()) {
     tujuanList.push(`Lainnya: ${data.tujuanLainnya.trim()}`);
@@ -38,16 +41,24 @@ export function formatOrderToWhatsApp(data: OrderFormData, isPromoActiveOverride
     ctaList.push(`Lainnya: ${data.ctaLainnya.trim()}`);
   }
 
+  const paketText = isElite
+    ? `Paket: PAKET ELITE (Web Custom - Sampai 7 Halaman)`
+    : isPromo
+    ? `Paket: PAKET UMKM - PROMO DISKON 50% (Rp 499.000 -> Rp 249.500)`
+    : `Paket: PAKET UMKM FLASH SALE (Rp 1.8 Juta -> Rp 499.000)`;
+
+  const statusText = isElite
+    ? `Status: HARGA NET TETAP (Promo Banner Tidak Berlaku)\nTotal Tagihan: Rp 3.000.000`
+    : isPromo
+    ? `Status Promo: YA (KLAIM PROMO DISKON 50% BANNER)\nTotal Tagihan: Rp 249.500`
+    : `Status Promo: REGULER FLASH SALE\nTotal Tagihan: Rp 499.000`;
+
   const lines = [
-    `*FORMULIR PEMESANAN JASA LANDING PAGE WEB KILAT*`,
-    isPromo
-      ? `Paket: PROMO SPESIAL DISKON 50% (Rp 499.000 -> Rp 249.000)`
-      : `Paket: FLASH SALE (Promo Terbatas Rp 1.8 Juta -> Rp 499.000)`,
+    `*FORMULIR PEMESANAN JASA WEBSITE WEB KILAT*`,
+    paketText,
     ``,
     `--------------------------------`,
-    isPromo
-      ? `Status Promo: YA (PROGRAM PROMO DISKON 50%)\nTotal Tagihan: Rp 249.000`
-      : `Status Promo: REGULER FLASH SALE\nTotal Tagihan: Rp 499.000`,
+    statusText,
     `--------------------------------`,
     `Tanggal: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'full' })}`,
     ``,

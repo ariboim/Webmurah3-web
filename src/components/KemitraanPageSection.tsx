@@ -33,6 +33,8 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { ADMIN_WA_NUMBER } from '../types/order';
+import html2canvas from 'html2canvas-pro';
+import { jsPDF } from 'jspdf';
 
 interface MitraData {
   namaLengkap: string;
@@ -289,7 +291,7 @@ export const KemitraanPageSection: React.FC<{
     window.scrollTo({ top: 200, behavior: 'smooth' });
   };
 
-  // Step 3: Export to PDF using html2pdf.js or Window Print Fallback
+  // Step 3: Export to PDF using html2canvas-pro (native OKLCH support) + jsPDF
   const handleDownloadPdf = async () => {
     if (!agreementContainerRef.current) return;
     setIsExportingPdf(true);
@@ -299,30 +301,86 @@ export const KemitraanPageSection: React.FC<{
     const fileName = `Perjanjian-Kemitraan-${safeMitraName}.pdf`;
 
     try {
-      const html2pdfWindow = (window as any).html2pdf;
-      if (typeof html2pdfWindow === 'function') {
-        const opt = {
-          margin: [10, 12, 10, 12], // [top, left, bottom, right] in mm
-          filename: fileName,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-        };
+      const element = agreementContainerRef.current;
 
-        await html2pdfWindow().set(opt).from(agreementContainerRef.current).save();
-        setIsExportingPdf(false);
-        setPdfSuccessNotice(`Dokumen PDF resmi berhasil diunduh: ${fileName}`);
-        setTimeout(() => setPdfSuccessNotice(null), 8000);
+      // Render with html2canvas-pro which natively supports Tailwind v4 OKLCH colors
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+      const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
+      const margin = 10; // 10mm margin
+      const printWidth = pageWidth - margin * 2; // 190mm
+      const availablePageHeight = pageHeight - margin * 2; // 277mm
+
+      // Total height in mm when fitted to printWidth
+      const totalPrintHeight = (canvas.height * printWidth) / canvas.width;
+
+      if (totalPrintHeight <= availablePageHeight) {
+        // Single page document
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        pdf.addImage(imgData, 'JPEG', margin, margin, printWidth, totalPrintHeight);
       } else {
-        // Fallback: window.print()
-        setIsExportingPdf(false);
-        window.print();
+        // Multi-page document: slice canvas cleanly by page height
+        const pageCanvasHeight = (availablePageHeight * canvas.width) / printWidth;
+        let renderedHeight = 0;
+        let pageIndex = 0;
+
+        while (renderedHeight < canvas.height) {
+          if (pageIndex > 0) {
+            pdf.addPage();
+          }
+
+          const currentSliceHeight = Math.min(pageCanvasHeight, canvas.height - renderedHeight);
+
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = currentSliceHeight;
+          const sliceCtx = sliceCanvas.getContext('2d');
+
+          if (sliceCtx) {
+            sliceCtx.fillStyle = '#ffffff';
+            sliceCtx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+            sliceCtx.drawImage(
+              canvas,
+              0,
+              renderedHeight,
+              canvas.width,
+              currentSliceHeight,
+              0,
+              0,
+              canvas.width,
+              currentSliceHeight
+            );
+
+            const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.98);
+            const slicePrintHeight = (currentSliceHeight * printWidth) / canvas.width;
+            pdf.addImage(sliceData, 'JPEG', margin, margin, printWidth, slicePrintHeight);
+          }
+
+          renderedHeight += pageCanvasHeight;
+          pageIndex++;
+        }
       }
+
+      pdf.save(fileName);
+      setIsExportingPdf(false);
+      setPdfSuccessNotice(`Dokumen PDF resmi berhasil diunduh: ${fileName}`);
+      setTimeout(() => setPdfSuccessNotice(null), 8000);
     } catch (err: any) {
       console.error('PDF export error:', err);
       setIsExportingPdf(false);
-      // Fallback to print
+      // Fallback: window.print()
       window.print();
     }
   };
