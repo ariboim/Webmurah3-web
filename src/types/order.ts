@@ -54,7 +54,7 @@ export function formatOrderToWhatsApp(data: OrderFormData, isPromoActiveOverride
     : `Status Promo: REGULER FLASH SALE\nTotal Tagihan: Rp 499.000`;
 
   const lines = [
-    `*FORMULIR PEMESANAN JASA WEBSITE WEB KILAT*`,
+    `*FORMULIR PEMESANAN JASA WEBSITE WEBMURAH.BIZ.ID*`,
     paketText,
     ``,
     `--------------------------------`,
@@ -80,20 +80,30 @@ export function formatOrderToWhatsApp(data: OrderFormData, isPromoActiveOverride
     `• *Harga & Penawaran Khusus:* ${data.hargaPenawaran || '-'}`,
     data.catatanTambahan ? `• *Catatan Tambahan:* ${data.catatanTambahan}` : null,
     ``,
-    `*3. KEBUTUHAN & TUJUAN LANDING PAGE*`,
+    `*3. KEBUTUHAN & TUJUAN WEBSITE*`,
     `• *Tujuan Utama:*`,
     ...(tujuanList.length > 0 ? tujuanList.map(t => `   - ${t}`) : [`   - (Belum ditentukan)`]),
     `• *Call to Action (CTA) Diinginkan:*`,
     ...(ctaList.length > 0 ? ctaList.map(c => `   - ${c}`) : [`   - (Belum ditentukan)`]),
     ``,
-    `*4. SYARAT & KETENTUAN:*`,
-    `• PESAN SEKARANG BAYAR SETELAH JADI.`,
-    `• Setelah web jadi kami akan mengirimkan invoice dengan batas waktu 1 x 24 jam untuk pembayaran, jika sudah melewati batas waktu kami belum menerima pembayaran maka status web akan kami pending (tidak bisa online).`,
-    `• Menyetujui S&K Harga Promo (Free 1x revisi, Free domain .my.id/.biz.id, tanpa email bisnis)`,
-    ``,
-    isPromo
-      ? `Halo Admin Webkilat, saya memesan lewat *Promo Diskon 50% (Rp 249.000)*. Mohon segera diproses pengerjaannya. Terima kasih!`
-      : `Halo Admin Webkilat, saya sudah mengisi formulir order di atas dan menyetujui syarat & ketentuan promo. Mohon segera diproses untuk pengerjaan 1 hari kilat. Terima kasih!`
+    isElite
+      ? `*4. SYARAT & KETENTUAN PAKET ELITE:*
+• Skema Pembayaran: Wajib DP 50% (Rp 1.500.000) di awal, sisanya (Rp 1.500.000) setelah pengerjaan selesai & disetujui.
+• Waktu Pengerjaan: 5 - 7 hari kerja.
+• Fasilitas: Sampai 7 halaman custom, optimasi PageSpeed, SEO on-page, domain & hosting 1 tahun, dan free revisi 2x.
+
+Halo Admin Webkilat, saya memesan *PAKET ELITE (Web Custom - Rp 3.000.000)* dengan komitmen DP 50% & estimasi pengerjaan 5-7 hari kerja. Mohon segera dipandu untuk sesi briefing materi & nomor rekening DP. Terima kasih!`
+      : `*4. SYARAT & KETENTUAN PAKET UMKM:*
+• Skema Pembayaran: PESAN SEKARANG, BAYAR SETELAH JADI (100% Bebas Risiko).
+• Waktu Pengerjaan: Kilat 1 hari kerja (24 jam selesai).
+• Setelah web jadi kami akan mengirimkan invoice dengan batas waktu 1 x 24 jam untuk pembayaran.
+• Free revisi 1x, free domain .my.id/.biz.id 1 tahun, cloud hosting & tombol WhatsApp.
+
+${
+  isPromo
+    ? 'Halo Admin Webkilat, saya memesan lewat *Promo Diskon 50% (Rp 249.500)*. Mohon segera diproses pengerjaannya 1 hari kilat. Terima kasih!'
+    : 'Halo Admin Webkilat, saya sudah mengisi formulir order di atas dan menyetujui ketentuan paket UMKM (Rp 499.000). Mohon segera diproses pengerjaannya. Terima kasih!'
+}`
   ].filter(line => line !== null) as string[];
 
   return lines.join('\n');

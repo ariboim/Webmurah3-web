@@ -38,6 +38,11 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     id: 'faq-7',
     question: 'Bagaimana sistem pembayaran dan pemesanan?',
-    answer: 'Sangat mudah: isi formulir pemesanan di website ini, lalu klik "Order Sekarang". Rincian otomatis terkirim rapi ke WhatsApp Admin kami (089673686625). Anda dapat melakukan pembayaran via Transfer Bank (BCA, Mandiri, BRI, BNI) atau QRIS All Payment (GoPay, OVO, Dana, ShopeePay) dengan aman.',
+    answer: 'Sangat mudah: isi formulir pemesanan di website ini, lalu klik tombol pesan WhatsApp. Rincian otomatis terkirim rapi ke WhatsApp Admin kami (089673686625). Untuk Paket UMKM bayar setelah web jadi, sedangkan Paket Elite berlaku DP 50% di awal dan sisa setelah selesai.',
+  },
+  {
+    id: 'faq-web-custom',
+    question: 'Apa itu Web Custom (Paket Elite) dan apa syarat ketentuannya?',
+    answer: 'Web Custom adalah website profesional multi-halaman (hingga 7 halaman) yang dibangun khusus dari nol tanpa template instan, dengan performa PageSpeed optimal 90+, dasar SEO on-page, dan desain otentik. Syarat & ketentuan Paket Elite: wajib DP 50% (Rp 1.500.000) di awal, sisanya dilunasi setelah pengerjaan selesai, dengan waktu pengerjaan 5 - 7 hari kerja. Pelajari panduan edukasi lengkap mengenai Web Custom di tautan resmi kami: https://share.google/87klge8DoF7cqlByM',
   },
 ];

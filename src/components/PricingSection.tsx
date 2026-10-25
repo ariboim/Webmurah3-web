@@ -14,6 +14,10 @@ import {
   Layers,
   Star,
   CheckCircle2,
+  CreditCard,
+  Calendar,
+  HelpCircle,
+  ExternalLink,
 } from 'lucide-react';
 import { CountdownDisplay } from './CountdownTimer';
 
@@ -318,14 +322,38 @@ export const PricingSection: React.FC = () => {
                       Fixed Price
                     </span>
                   </div>
+
+                  {/* Wajib DP 50% & Pengerjaan 5-7 Hari Kerja Highlight */}
+                  <div className="pt-2 border-t border-slate-700/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11.5px]">
+                    <div className="bg-slate-900/90 px-3 py-2 rounded-xl border border-amber-400/30 flex items-center gap-2 text-amber-200">
+                      <CreditCard className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span><strong>Wajib DP 50%</strong> (Rp 1.5 Jt), sisanya setelah selesai</span>
+                    </div>
+                    <div className="bg-slate-900/90 px-3 py-2 rounded-xl border border-amber-400/30 flex items-center gap-2 text-amber-200">
+                      <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>Pengerjaan: <strong>5 - 7 Hari Kerja</strong></span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Features List exactly matching prompt requirements */}
                 <div className="space-y-2.5 pt-2">
                   <span className="text-xs font-black uppercase tracking-wider text-amber-300 block">
-                    Fitur &amp; Fasilitas Layanan Elite:
+                    Fitur &amp; Ketentuan Layanan Elite:
                   </span>
                   <ul className="space-y-2 text-xs sm:text-[13px] text-slate-200">
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="text-amber-300 font-bold">Wajib DP 50%</strong> (Rp 1.500.000 di awal), sisanya dilunasi setelah pengerjaan selesai &amp; disetujui
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="text-amber-300 font-bold">Pengerjaan 5 - 7 Hari Kerja</strong> intensif dengan pengujian performa menyeluruh
+                      </div>
+                    </li>
                     <li className="flex items-start gap-2.5">
                       <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                       <div>
@@ -368,13 +396,24 @@ export const PricingSection: React.FC = () => {
                         <strong className="text-white font-bold">Termasuk Domain &amp; Cloud Server 1 Tahun</strong> (SSL HTTPS + backup rutin)
                       </div>
                     </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                      <div>
-                        <strong className="text-white font-bold">Dukungan Prioritas</strong> &amp; garansi pemeliharaan teknis eksklusif
-                      </div>
-                    </li>
                   </ul>
+                </div>
+
+                {/* Edukasi Web Custom in Card */}
+                <div className="p-3 bg-amber-400/10 rounded-xl border border-amber-400/30 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 text-amber-200">
+                    <HelpCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Belum tahu apa itu Web Custom?</span>
+                  </div>
+                  <a
+                    href="https://share.google/87klge8DoF7cqlByM"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1 shrink-0"
+                  >
+                    <span>Pelajari Disini</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
                 </div>
               </div>
 
@@ -391,13 +430,88 @@ export const PricingSection: React.FC = () => {
                   <ArrowRight className="w-4 h-4 stroke-[3]" />
                 </button>
                 <p className="text-[11px] text-center text-slate-400 font-medium">
-                  ✓ Mengunci paket custom Rp 3.000.000 langsung ke formulir pemesanan
+                  ✓ DP 50% di awal, sisa setelah selesai &bull; Waktu pengerjaan 5-7 hari kerja
                 </p>
               </div>
 
             </div>
           </div>
 
+        </div>
+
+        {/* ========================================================================= */}
+        {/* EDUKASI LENGKAP: APA ITU WEB CUSTOM? (LINK SHARE GOOGLE)                  */}
+        {/* ========================================================================= */}
+        <div className="mt-12 max-w-5xl mx-auto bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border-2 border-indigo-500/40 shadow-2xl space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-indigo-800/60">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-600/50 border border-indigo-400 flex items-center justify-center text-amber-300 shadow-md shrink-0">
+                <HelpCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/15 px-2.5 py-0.5 rounded border border-amber-400/30">
+                  Edukasi &amp; Panduan Bisnis
+                </span>
+                <h3 className="text-xl sm:text-2xl font-black text-white mt-1">
+                  Apa Itu Web Custom &amp; Mengapa Bisnis Anda Membutuhkannya?
+                </h3>
+              </div>
+            </div>
+
+            <a
+              href="https://share.google/87klge8DoF7cqlByM"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition-all shrink-0 hover:scale-102"
+            >
+              <span>Buka Dokumen Edukasi</span>
+              <ExternalLink className="w-4 h-4 stroke-[2.5]" />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+              <h4 className="font-extrabold text-white text-sm flex items-center gap-1.5 text-amber-300">
+                <span>1. Bukan Template Pasaran</span>
+              </h4>
+              <p className="text-xs text-slate-300">
+                Web Custom dirancang dan dikoding dari awal khusus untuk bisnis Anda. Tampilan otentik tanpa batasan kaku layout template publik yang dipakai ribuan website lain.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+              <h4 className="font-extrabold text-white text-sm flex items-center gap-1.5 text-amber-300">
+                <span>2. Kecepatan PageSpeed 90+</span>
+              </h4>
+              <p className="text-xs text-slate-300">
+                Arsitektur kode bersih (*clean code*) tanpa plugin berat yang membebani server. Kecepatan akses ultra kilat disukai pembeli &amp; diprioritaskan algoritma Google.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+              <h4 className="font-extrabold text-white text-sm flex items-center gap-1.5 text-amber-300">
+                <span>3. Skalabilitas &amp; Keamanan</span>
+              </h4>
+              <p className="text-xs text-slate-300">
+                Bebas diintegrasikan dengan database, API pembayaran, webhook WhatsApp, dan fitur kustom lain seiring skala bisnis Anda melesat tumbuh.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400 border-t border-indigo-900/80">
+            <span>
+              Ingin mendalami panduan lengkap, komparasi teknis, dan studi kasus Web Custom?
+            </span>
+            <a
+              href="https://share.google/87klge8DoF7cqlByM"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-400 hover:text-amber-300 font-bold hover:underline flex items-center gap-1.5"
+            >
+              <span>Pelajari selengkapnya di https://share.google/87klge8DoF7cqlByM</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
         </div>
 
         {/* Bottom Trust & Bank Methods Bar */}

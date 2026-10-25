@@ -1007,7 +1007,7 @@ Saya siap menjalankan komitmen WFH dan target evaluasi Rp 10.000.000/bulan. Moho
                       Nomor: {formData.nomorSurat}
                     </div>
                     <div className="text-[10px] text-slate-400 pt-1">
-                      Jl. Pangkalan 6 Raya No. 16 RT 003 RW 004, Ciketing Udik, Bantargebang, Kota Bekasi 17531
+                      PT INOVASI TEKNOLOGI DIGITAL INDONESIA, jl pangkalan 6 raya no 16 rt 003 rw 004  ,ciketing udik Bekasi 17153
                     </div>
                   </div>
 
@@ -1026,12 +1026,12 @@ Saya siap menjalankan komitmen WFH dan target evaluasi Rp 10.000.000/bulan. Moho
                         <tr>
                           <td className="w-36 font-bold text-slate-600 py-0.5">Nama Lengkap</td>
                           <td className="w-3">:</td>
-                          <td className="font-bold text-slate-900">Aries Munandar, S.Kom</td>
+                          <td className="font-bold text-slate-900">Aries M Hardjasasmita,S,kom</td>
                         </tr>
                         <tr>
                           <td className="font-bold text-slate-600 py-0.5">Jabatan</td>
                           <td>:</td>
-                          <td>Principle / Direktur Utama</td>
+                          <td>Principle</td>
                         </tr>
                         <tr>
                           <td className="font-bold text-slate-600 py-0.5">Badan Usaha</td>
@@ -1041,7 +1041,7 @@ Saya siap menjalankan komitmen WFH dan target evaluasi Rp 10.000.000/bulan. Moho
                         <tr>
                           <td className="font-bold text-slate-600 py-0.5">Alamat Kantor</td>
                           <td>:</td>
-                          <td>Jl. Pangkalan 6 Raya No. 16 RT 003 RW 004, Bekasi 17531</td>
+                          <td>PT INOVASI TEKNOLOGI DIGITAL INDONESIA, jl pangkalan 6 raya no 16 rt 003 rw 004  ,ciketing udik Bekasi 17153</td>
                         </tr>
                       </tbody>
                     </table>
@@ -1246,7 +1246,7 @@ Saya siap menjalankan komitmen WFH dan target evaluasi Rp 10.000.000/bulan. Moho
                             <span>DIGITAL INDONESIA</span>
                           </div>
 
-                          {/* Tanda Tangan Digital Pihak Pertama (Aries Munandar, S.Kom) */}
+                          {/* Tanda Tangan Digital Pihak Pertama (Aries M Hardjasasmita,S,kom) */}
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 140" width="180" height="80" className="relative z-10 drop-shadow-xs">
                             <path d="M 35 105 C 40 75, 55 25, 75 22 C 90 20, 95 65, 80 115 M 50 78 Q 75 72, 105 76 C 118 78, 128 62, 132 85 C 136 100, 142 68, 150 82 C 156 94, 162 70, 172 80 C 182 90, 192 65, 202 78 C 215 95, 235 60, 245 108 Q 220 118, 140 114 C 70 110, 45 116, 120 102 Q 220 85, 295 90" fill="none" stroke="#0f2b5c" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                             <circle cx="282" cy="74" r="2.5" fill="#0f2b5c" />
@@ -1254,8 +1254,8 @@ Saya siap menjalankan komitmen WFH dan target evaluasi Rp 10.000.000/bulan. Moho
                         </div>
 
                         <div className="border-t border-slate-400 pt-1.5 inline-block min-w-[180px]">
-                          <div className="font-black text-xs text-slate-950">Aries Munandar, S.Kom</div>
-                          <div className="text-[10px] text-slate-500">Principle / Direktur Utama</div>
+                          <div className="font-black text-xs text-slate-950">Aries M Hardjasasmita,S,kom</div>
+                          <div className="text-[10px] text-slate-500">Principle</div>
                         </div>
                       </div>
 

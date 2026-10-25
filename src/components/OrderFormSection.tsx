@@ -30,6 +30,10 @@ import {
   RefreshCw,
   Crown,
   Star,
+  ExternalLink,
+  HelpCircle,
+  CreditCard,
+  Calendar,
 } from 'lucide-react';
 
 export interface DomainCheckItem {
@@ -655,9 +659,43 @@ export const OrderFormSection: React.FC = () => {
                   }`}>
                     Website custom korporat sampai 7 halaman, desain eksklusif responsif, optimasi PageSpeed tinggi, form kontak &amp; WA, dasar SEO on-page, dan gratis revisi 2x.
                   </p>
+                  
+                  {/* Terms badge highlight */}
+                  <div className="pt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
+                    <span className={`px-2 py-0.5 rounded font-bold ${
+                      selectedPackage === 'elite'
+                        ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40'
+                        : 'bg-slate-100 text-slate-700'
+                    }`}>
+                      Wajib DP 50% (Rp 1.5 Jt)
+                    </span>
+                    <span className={`px-2 py-0.5 rounded font-bold ${
+                      selectedPackage === 'elite'
+                        ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40'
+                        : 'bg-slate-100 text-slate-700'
+                    }`}>
+                      Pengerjaan: 5 - 7 Hari Kerja
+                    </span>
+                  </div>
+
+                  {/* Education link */}
+                  <div className="pt-1">
+                    <a
+                      href="https://share.google/87klge8DoF7cqlByM"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className={`text-[11px] font-bold hover:underline inline-flex items-center gap-1 ${
+                        selectedPackage === 'elite' ? 'text-amber-300' : 'text-blue-600'
+                      }`}
+                    >
+                      <span>Apa itu Web Custom? Pelajari disini</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
 
-                <div className={`pt-4 mt-3 border-t flex items-baseline justify-between ${
+                <div className={`pt-3 mt-3 border-t flex items-baseline justify-between ${
                   selectedPackage === 'elite' ? 'border-slate-800' : 'border-slate-200/80'
                 }`}>
                   <span className={`text-xs font-semibold ${
@@ -1362,6 +1400,14 @@ export const OrderFormSection: React.FC = () => {
                 <ul className="space-y-2 text-xs text-slate-700 leading-relaxed">
                   <li className="flex items-start gap-2">
                     <span className="text-amber-600 font-bold shrink-0">&bull;</span>
+                    <span><strong className="text-amber-900 font-bold">Wajib DP 50% (Rp 1.500.000) di awal</strong>, sisanya (Rp 1.500.000) dilunasi setelah seluruh pengerjaan website selesai &amp; disetujui.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold shrink-0">&bull;</span>
+                    <span><strong className="text-amber-900 font-bold">Waktu Pengerjaan: 5 - 7 hari kerja</strong> intensif (termasuk arsitektur kustom, copywriting, dan optimasi menyeluruh).</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold shrink-0">&bull;</span>
                     <span><strong>Gratis revisi 2 kali</strong> untuk memastikan seluruh desain, konten, dan fungsionalitas berjalan optimal.</span>
                   </li>
                   <li className="flex items-start gap-2">
@@ -1376,10 +1422,25 @@ export const OrderFormSection: React.FC = () => {
                     <span className="text-amber-600 font-bold shrink-0">&bull;</span>
                     <span><strong>Termasuk setup domain &amp; cloud hosting</strong> selama 1 tahun penuh dengan sertifikat keamanan SSL HTTPS.</span>
                   </li>
+                  <li className="flex items-start gap-2 p-2.5 bg-amber-100/90 rounded-xl border border-amber-300">
+                    <span className="text-amber-800 font-black shrink-0 text-sm">💡</span>
+                    <span className="text-amber-950 font-bold leading-relaxed">
+                      Belum tahu apa itu Web Custom? Pelajari edukasi dan panduan resminya di{' '}
+                      <a
+                        href="https://share.google/87klge8DoF7cqlByM"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline text-blue-800 hover:text-blue-900 inline-flex items-center gap-1 font-black"
+                      >
+                        https://share.google/87klge8DoF7cqlByM
+                        <ExternalLink className="w-3 h-3 inline" />
+                      </a>
+                    </span>
+                  </li>
                   <li className="flex items-start gap-2 p-2.5 bg-amber-100/80 rounded-xl border border-amber-300">
                     <span className="text-amber-800 font-black shrink-0 text-sm">⚠️</span>
                     <span className="text-amber-950 font-bold leading-relaxed">
-                      Setelah website selesai dikembangkan, kami akan mengirimkan invoice pelunasan dengan batas waktu <strong>1 x 24 jam</strong>.
+                      Setelah website selesai dikembangkan, kami akan mengirimkan invoice pelunasan sisa 50% dengan batas waktu <strong>1 x 24 jam</strong>.
                     </span>
                   </li>
                 </ul>
@@ -1545,7 +1606,7 @@ export const OrderFormSection: React.FC = () => {
                   }`}>
                     {selectedPackage === 'elite' ? (
                       <span className="text-amber-200">
-                        ✓ Paket Elite mencakup sampai 7 halaman custom, optimasi PageSpeed, form kontak/WA, dasar SEO on-page, dan gratis revisi 2x. Promo banner 50% tidak berlaku untuk paket ini.
+                        ✓ Paket Elite (Rp 3.000.000): Wajib DP 50% (Rp 1.500.000) di awal, sisanya dilunasi setelah web selesai &amp; disetujui. Estimasi pengerjaan: 5 - 7 hari kerja. Mencakup sampai 7 halaman custom, PageSpeed 90+, SEO on-page, dan gratis revisi 2x. Promo banner 50% tidak berlaku untuk paket ini.
                       </span>
                     ) : isPromoActive ? (
                       <span className="text-emerald-900 font-semibold">
