@@ -68,13 +68,15 @@ import {
 } from '../utils/mediaUtils';
 import { IndoDigitalLogo } from './IndoDigitalLogo';
 import { RichTextEditor } from './RichTextEditor';
+import { AdminMitraManagement } from './mitra/AdminMitraManagement';
+import { getAllMitra } from '../utils/mitraStorage';
 
 interface AdminDashboardProps {
   onNavigateToPublicArticles: () => void;
   onNavigateToHome: () => void;
 }
 
-type AdminTab = 'create' | 'list' | 'categories' | 'autopost' | 'newsletter' | 'settings';
+type AdminTab = 'mitra' | 'create' | 'list' | 'categories' | 'autopost' | 'newsletter' | 'settings';
 
 export const CATEGORY_COLOR_PRESETS = [
   { id: 'sky', label: 'Biru (Sky)', color: 'bg-sky-50 text-sky-800 border-sky-200', dot: 'bg-sky-500' },
@@ -99,8 +101,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [loginError, setLoginError] = useState('');
   const [loginSuccessNotice, setLoginSuccessNotice] = useState('');
 
-  // Active Admin Sub-tab
-  const [activeTab, setActiveTab] = useState<AdminTab>('create');
+  // Active Admin Sub-tab (Defaults to 'mitra' for quick partner approval)
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => {
+    try {
+      const hash = (window.location.hash || '').toLowerCase();
+      if (hash.includes('artikel') || hash.includes('blog') || hash.includes('post')) return 'create';
+    } catch {}
+    return 'mitra';
+  });
+
+  // Mitra live counts for badges
+  const [mitraStats, setMitraStats] = useState(() => {
+    const list = getAllMitra();
+    return {
+      total: list.length,
+      pending: list.filter((m) => m.status === 'PENDING_APPROVAL').length,
+    };
+  });
+
+  const refreshMitraStats = () => {
+    const list = getAllMitra();
+    setMitraStats({
+      total: list.length,
+      pending: list.filter((m) => m.status === 'PENDING_APPROVAL').length,
+    });
+  };
+
+  useEffect(() => {
+    refreshMitraStats();
+  }, [activeTab]);
 
   // Articles State
   const [articles, setArticles] = useState<Article[]>([]);
@@ -862,114 +891,169 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Subheader & Navigation Tabs */}
       <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900">
-              Dashboard Pengelola Konten
-            </h1>
-            <p className="text-xs text-slate-500">
-              Login aktif sebagai: <strong className="text-sky-700">{currentAdminUser}</strong> • Total {articles.length} artikel ({customCount} diterbitkan oleh admin)
-            </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-2xs">
+                <span>DASHBOARD ADMIN RESMI</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span className="text-white">PT ITDI</span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900">
+                Panel Kontrol Admin: Kemitraan &amp; Artikel
+              </h1>
+              <p className="text-xs text-slate-500">
+                Login aktif: <strong className="text-sky-700">{currentAdminUser}</strong> &bull; {mitraStats.total} Mitra ({mitraStats.pending} Butuh Approval) &bull; {articles.length} Artikel
+              </p>
+            </div>
+
+            {/* Primary Main Menu Buttons (Kelola Mitra vs Kelola Artikel) */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+              {/* PRIMARY TAB 1: KELOLA MITRA (APPROVAL) */}
+              <button
+                onClick={() => {
+                  setActiveTab('mitra');
+                  setFormSuccessMessage('');
+                }}
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl transition-all cursor-pointer text-xs font-black shadow-xs ${
+                  activeTab === 'mitra'
+                    ? 'bg-[#1D3582] text-white shadow-md ring-2 ring-blue-500/30 scale-[1.02]'
+                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border-2 border-emerald-300'
+                }`}
+              >
+                <Users className="w-4 h-4 text-emerald-400" />
+                <span>1. KELOLA MITRA (APPROVAL)</span>
+                {mitraStats.pending > 0 ? (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black animate-pulse">
+                    {mitraStats.pending} Butuh Approval
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 text-[10px] font-extrabold">
+                    {mitraStats.total} Mitra
+                  </span>
+                )}
+              </button>
+
+              {/* PRIMARY TAB 2: KELOLA ARTIKEL & BLOG */}
+              <button
+                onClick={() => {
+                  setActiveTab(activeTab === 'mitra' || activeTab === 'settings' ? 'list' : activeTab);
+                  setFormSuccessMessage('');
+                }}
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl transition-all cursor-pointer text-xs font-black shadow-xs ${
+                  activeTab !== 'mitra' && activeTab !== 'settings'
+                    ? 'bg-sky-600 text-white shadow-md ring-2 ring-sky-500/30 scale-[1.02]'
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300'
+                }`}
+              >
+                <BookOpen className="w-4 h-4 text-sky-500" />
+                <span>2. KELOLA ARTIKEL &amp; BLOG ({articles.length})</span>
+              </button>
+
+              {/* PRIMARY TAB 3: AKUN ADMIN */}
+              <button
+                onClick={() => {
+                  setActiveTab('settings');
+                  setFormSuccessMessage('');
+                }}
+                className={`flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-2xl transition-all cursor-pointer text-xs font-black ${
+                  activeTab === 'settings'
+                    ? 'bg-slate-900 text-amber-300 shadow-md ring-2 ring-amber-400/40'
+                    : 'bg-white hover:bg-slate-50 text-slate-600 border border-slate-200'
+                }`}
+                title="Pengaturan Akun Admin"
+              >
+                <Settings className="w-4 h-4" />
+                <span>Akun</span>
+              </button>
+            </div>
           </div>
 
-          {/* Main Admin Tabs */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-black w-full sm:w-auto overflow-x-auto">
-            <button
-              onClick={() => {
-                setActiveTab('create');
-                setFormSuccessMessage('');
-              }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'create'
-                  ? 'bg-sky-600 text-white shadow-xs'
-                  : 'text-slate-700 hover:text-sky-700 hover:bg-white'
-              }`}
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>{editingArticleId ? 'Edit Artikel' : 'Input Artikel'}</span>
-            </button>
+          {/* Sub-Tabs for Articles when in Article Mode */}
+          {activeTab !== 'mitra' && activeTab !== 'settings' && (
+            <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 text-xs font-bold overflow-x-auto animate-fade-in">
+              <span className="text-[10px] uppercase font-black text-slate-400 px-2 shrink-0">
+                Menu Artikel:
+              </span>
+              <button
+                onClick={() => {
+                  setActiveTab('create');
+                  setFormSuccessMessage('');
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'create'
+                    ? 'bg-sky-600 text-white shadow-xs font-black'
+                    : 'text-slate-700 hover:text-sky-700 hover:bg-white'
+                }`}
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>{editingArticleId ? 'Edit Artikel' : 'Tulis Artikel Baru'}</span>
+              </button>
 
-            <button
-              onClick={() => {
-                setActiveTab('list');
-                setFormSuccessMessage('');
-              }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'list'
-                  ? 'bg-sky-600 text-white shadow-xs'
-                  : 'text-slate-700 hover:text-sky-700 hover:bg-white'
-              }`}
-            >
-              <Trash2 className="w-4 h-4 text-rose-500" />
-              <span>Daftar &amp; Hapus Artikel ({articles.length})</span>
-            </button>
+              <button
+                onClick={() => {
+                  setActiveTab('list');
+                  setFormSuccessMessage('');
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'list'
+                    ? 'bg-sky-600 text-white shadow-xs font-black'
+                    : 'text-slate-700 hover:text-sky-700 hover:bg-white'
+                }`}
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                <span>Daftar Artikel ({articles.length})</span>
+              </button>
 
-            <button
-              onClick={() => {
-                setActiveTab('categories');
-                setFormSuccessMessage('');
-              }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'categories'
-                  ? 'bg-sky-600 text-white shadow-xs'
-                  : 'text-slate-700 hover:text-sky-700 hover:bg-white'
-              }`}
-            >
-              <Tag className="w-4 h-4 text-emerald-500" />
-              <span>Kelola Kategori ({categories.length})</span>
-            </button>
+              <button
+                onClick={() => {
+                  setActiveTab('categories');
+                  setFormSuccessMessage('');
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'categories'
+                    ? 'bg-sky-600 text-white shadow-xs font-black'
+                    : 'text-slate-700 hover:text-sky-700 hover:bg-white'
+                }`}
+              >
+                <Tag className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Kategori ({categories.length})</span>
+              </button>
 
-            <button
-              onClick={() => {
-                setActiveTab('autopost');
-                setFormSuccessMessage('');
-                fetchSchedulerStatus();
-              }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'autopost'
-                  ? 'bg-sky-600 text-white shadow-xs'
-                  : 'text-slate-700 hover:text-sky-700 hover:bg-white'
-              }`}
-            >
-              <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
-              <span>Auto-Post 2x/Hari</span>
-              {schedulerStatus?.config?.enabled && (
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              )}
-            </button>
+              <button
+                onClick={() => {
+                  setActiveTab('autopost');
+                  setFormSuccessMessage('');
+                  fetchSchedulerStatus();
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'autopost'
+                    ? 'bg-sky-600 text-white shadow-xs font-black'
+                    : 'text-slate-700 hover:text-sky-700 hover:bg-white'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                <span>Auto-Post 2x/Hari</span>
+              </button>
 
-            <button
-              onClick={() => {
-                setActiveTab('newsletter');
-                setFormSuccessMessage('');
-                fetchSubscribers();
-                fetchSmtpConfig();
-              }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'newsletter'
-                  ? 'bg-sky-600 text-white shadow-xs'
-                  : 'text-slate-700 hover:text-sky-700 hover:bg-white'
-              }`}
-            >
-              <Mail className="w-4 h-4 text-amber-500" />
-              <span>Newsletter ({subscribers.length})</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('settings');
-                setFormSuccessMessage('');
-              }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'settings'
-                  ? 'bg-sky-600 text-white shadow-xs'
-                  : 'text-slate-700 hover:text-sky-700 hover:bg-white'
-              }`}
-            >
-              <Settings className="w-4 h-4" />
-              <span>Akun Admin</span>
-            </button>
-          </div>
+              <button
+                onClick={() => {
+                  setActiveTab('newsletter');
+                  setFormSuccessMessage('');
+                  fetchSubscribers();
+                  fetchSmtpConfig();
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'newsletter'
+                    ? 'bg-sky-600 text-white shadow-xs font-black'
+                    : 'text-slate-700 hover:text-sky-700 hover:bg-white'
+                }`}
+              >
+                <Mail className="w-3.5 h-3.5 text-amber-500" />
+                <span>Newsletter ({subscribers.length})</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -2866,6 +2950,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* TAB 7: MANAJEMEN MITRA MANDIRI (NON-PKWT) */}
+        {/* ========================================================= */}
+        {activeTab === 'mitra' && (
+          <div className="animate-fade-in max-w-6xl mx-auto pb-12">
+            <AdminMitraManagement />
           </div>
         )}
       </main>

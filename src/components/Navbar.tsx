@@ -227,11 +227,24 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange }) => {
             )}
           </div>
 
-          {/* Mobile hamburger button */}
-          <div className="flex md:hidden items-center gap-2">
+          {/* Mobile hamburger button & Admin trigger */}
+          <div className="flex md:hidden items-center gap-1.5">
+            <button
+              onClick={() => handleSelectTab('admin')}
+              className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black transition-all cursor-pointer shadow-2xs ${
+                activeTab === 'admin'
+                  ? 'bg-slate-900 text-amber-300 ring-2 ring-amber-400'
+                  : 'bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300'
+              }`}
+              title="Dashboard Admin (Verifikasi Mitra & Artikel)"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-700" />
+              <span>Admin</span>
+            </button>
+
             <button
               onClick={() => handleSelectTab('order')}
-              className="px-3 py-1.5 text-[11px] font-black text-white bg-sky-600 hover:bg-sky-700 rounded-lg shadow-xs"
+              className="px-2.5 py-1.5 text-[11px] font-black text-white bg-sky-600 hover:bg-sky-700 rounded-lg shadow-xs"
             >
               Pesan Rp 499rb
             </button>
@@ -346,10 +359,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange }) => {
               >
                 <div className="flex items-center gap-2.5">
                   <Lock className="w-4 h-4 text-amber-600" />
-                  <span>6. Login Admin (Input Blog/Artikel)</span>
+                  <span>6. Dashboard Admin (Verifikasi Mitra &amp; Artikel)</span>
                 </div>
-                <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-extrabold">
-                  Khusus Admin
+                <span className="text-[10px] bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full font-black shadow-2xs">
+                  Akses Admin
                 </span>
               </button>
             </div>
